@@ -1,4 +1,3 @@
-import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient as createBrowserClient } from '@/lib/supabase/client'
 import type { User } from '@supabase/supabase-js'
 
@@ -78,31 +77,6 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
   }
 }
 
-// サーバー側認証関数
-export async function getServerSession() {
-  const supabase = await createServerClient()
-  const { data: { session }, error } = await supabase.auth.getSession()
-  
-  if (error) {
-    return null
-  }
-  
-  return session
-}
-
-export async function getServerUser(): Promise<AuthUser | null> {
-  const supabase = await createServerClient()
-  const { data: { user }, error } = await supabase.auth.getUser()
-  
-  if (error || !user) {
-    return null
-  }
-  
-  return {
-    ...user,
-    role: (user.user_metadata?.role || 'user') as UserRole
-  }
-}
 
 // 認可ヘルパー関数
 export function hasRole(user: AuthUser | null, requiredRole: UserRole): boolean {
