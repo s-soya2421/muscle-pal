@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -34,7 +34,8 @@ export default function SignUpPage() {
     setLoading(true)
 
     try {
-      await signUp(email, password, 'user')
+      await signUp(email, password)
+      router.push('/dashboard')
     } catch (error) {
       setError(error instanceof Error ? error.message : 'アカウント作成に失敗しました')
     } finally {

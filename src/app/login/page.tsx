@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -23,6 +23,7 @@ export default function LoginPage() {
 
     try {
       await signIn(email, password)
+      router.push('/dashboard')
     } catch (error) {
       setError(error instanceof Error ? error.message : 'ログインに失敗しました')
     } finally {
