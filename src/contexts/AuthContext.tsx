@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { AuthState, AuthContextType } from '@/types/auth';
+import { handleAuthError } from '@/lib/auth-errors';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -26,7 +27,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const { data: { user }, error } = await supabase.auth.getUser();
         
         if (error) {
-          setState(prev => ({ ...prev, error: error.message, loading: false }));
+          const japaneseError = handleAuthError(error, 'login');
+          setState(prev => ({ ...prev, error: japaneseError, loading: false }));
           return;
         }
 
@@ -36,9 +38,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
           error: null
         });
       } catch (error) {
+        const japaneseError = handleAuthError(error, 'login');
         setState(prev => ({ 
           ...prev, 
-          error: error instanceof Error ? error.message : '認証エラーが発生しました', 
+          error: japaneseError, 
           loading: false 
         }));
       }
@@ -72,13 +75,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       });
 
       if (error) {
-        setState(prev => ({ ...prev, error: error.message, loading: false }));
-        throw error;
+        const japaneseError = handleAuthError(error, 'login');
+        setState(prev => ({ ...prev, error: japaneseError, loading: false }));
+        throw new Error(japaneseError);
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'ログインに失敗しました';
-      setState(prev => ({ ...prev, error: message, loading: false }));
-      throw error;
+      const japaneseError = handleAuthError(error, 'login');
+      setState(prev => ({ ...prev, error: japaneseError, loading: false }));
+      throw new Error(japaneseError);
     }
   };
 
@@ -92,13 +96,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       });
 
       if (error) {
-        setState(prev => ({ ...prev, error: error.message, loading: false }));
-        throw error;
+        const japaneseError = handleAuthError(error, 'signup');
+        setState(prev => ({ ...prev, error: japaneseError, loading: false }));
+        throw new Error(japaneseError);
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : '新規登録に失敗しました';
-      setState(prev => ({ ...prev, error: message, loading: false }));
-      throw error;
+      const japaneseError = handleAuthError(error, 'signup');
+      setState(prev => ({ ...prev, error: japaneseError, loading: false }));
+      throw new Error(japaneseError);
     }
   };
 
@@ -109,13 +114,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const { error } = await supabase.auth.signOut();
 
       if (error) {
-        setState(prev => ({ ...prev, error: error.message, loading: false }));
-        throw error;
+        const japaneseError = handleAuthError(error, 'logout');
+        setState(prev => ({ ...prev, error: japaneseError, loading: false }));
+        throw new Error(japaneseError);
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'ログアウトに失敗しました';
-      setState(prev => ({ ...prev, error: message, loading: false }));
-      throw error;
+      const japaneseError = handleAuthError(error, 'logout');
+      setState(prev => ({ ...prev, error: japaneseError, loading: false }));
+      throw new Error(japaneseError);
     }
   };
 
@@ -126,15 +132,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const { error } = await supabase.auth.resetPasswordForEmail(email);
 
       if (error) {
-        setState(prev => ({ ...prev, error: error.message, loading: false }));
-        throw error;
+        const japaneseError = handleAuthError(error, 'reset');
+        setState(prev => ({ ...prev, error: japaneseError, loading: false }));
+        throw new Error(japaneseError);
       }
 
       setState(prev => ({ ...prev, loading: false }));
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'パスワードリセットに失敗しました';
-      setState(prev => ({ ...prev, error: message, loading: false }));
-      throw error;
+      const japaneseError = handleAuthError(error, 'reset');
+      setState(prev => ({ ...prev, error: japaneseError, loading: false }));
+      throw new Error(japaneseError);
     }
   };
 
