@@ -33,10 +33,6 @@ export async function middleware(request: NextRequest) {
   
   const { pathname } = request.nextUrl
   
-  // パブリックルート（認証不要）
-  const publicRoutes = ['/', '/login', '/signup']
-  const isPublicRoute = publicRoutes.includes(pathname)
-  
   // 認証が必要なルート
   const protectedRoutes = ['/dashboard', '/profile']
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))

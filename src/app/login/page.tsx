@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { handleAuthError } from '@/lib/auth-errors'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -25,7 +26,7 @@ export default function LoginPage() {
       await signIn(email, password)
       router.push('/dashboard')
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'ログインに失敗しました')
+      setError(handleAuthError(error, 'login page'))
     } finally {
       setLoading(false)
     }
