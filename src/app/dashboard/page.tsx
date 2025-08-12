@@ -1,4 +1,3 @@
-import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import { Button } from '@/components/ui/button';

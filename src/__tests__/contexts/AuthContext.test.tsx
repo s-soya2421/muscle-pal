@@ -23,7 +23,7 @@ const mockCreateClient = createClient as jest.MockedFunction<typeof createClient
 describe('AuthContext', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    mockCreateClient.mockReturnValue(mockSupabase as any)
+    mockCreateClient.mockReturnValue(mockSupabase as ReturnType<typeof createClient>)
   })
 
   describe('初期化', () => {

@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import LoginPage from '@/app/login/page'
 import { useAuth } from '@/contexts/AuthContext'
@@ -23,7 +23,7 @@ describe('LoginPage', () => {
       back: jest.fn(),
       forward: jest.fn(),
       refresh: jest.fn()
-    } as any)
+    } as ReturnType<typeof useRouter>)
 
     mockUseAuth.mockReturnValue({
       signIn: jest.fn(),

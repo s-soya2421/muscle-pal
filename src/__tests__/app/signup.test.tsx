@@ -23,7 +23,7 @@ describe('SignUpPage', () => {
       back: jest.fn(),
       forward: jest.fn(),
       refresh: jest.fn()
-    } as any)
+    } as ReturnType<typeof useRouter>)
 
     mockUseAuth.mockReturnValue({
       signIn: jest.fn(),

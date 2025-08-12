@@ -77,7 +77,7 @@ export const waitForLoadingToFinish = () => {
   return new Promise(resolve => setTimeout(resolve, 0))
 }
 
-export const createMockSupabaseResponse = (data: any, error: any = null) => ({
+export const createMockSupabaseResponse = (data: unknown, error: unknown = null) => ({
   data,
   error
 })
