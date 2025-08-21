@@ -96,7 +96,7 @@ describe('AuthContext', () => {
     })
 
     test('ログイン失敗時にエラーがthrowされる', async () => {
-      const error = { code: 'invalid_credentials', message: 'Invalid credentials' }
+      const error = { code: 'invalid_credentials', message: 'Invalid login credentials' }
       mockSupabase.auth.signInWithPassword.mockResolvedValue(
         createMockSupabaseResponse(null, error)
       )
@@ -109,12 +109,15 @@ describe('AuthContext', () => {
         await result.current.signIn('test@example.com', 'wrongpassword')
       })).rejects.toThrow('メールアドレスまたはパスワードが正しくありません')
 
-      expect(result.current.error).toBe('メールアドレスまたはパスワードが正しくありません')
+      // Wait for the state to update
+      await waitFor(() => {
+        expect(result.current.error).toBe('メールアドレスまたはパスワードが正しくありません')
+      })
     })
 
     test('ネットワークエラー時の処理', async () => {
       mockSupabase.auth.signInWithPassword.mockRejectedValue(
-        new Error('Network error')
+        new Error('Failed to fetch')
       )
 
       const { result } = renderHook(() => useAuth(), {
@@ -123,7 +126,7 @@ describe('AuthContext', () => {
 
       await expect(act(async () => {
         await result.current.signIn('test@example.com', 'password')
-      })).rejects.toThrow('ログインに失敗しました')
+      })).rejects.toThrow('ネットワークエラーが発生しました')
     })
   })
 
