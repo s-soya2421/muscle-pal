@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -135,11 +136,23 @@ async function DashboardContent({ userId }: { userId: string }) {
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <div className="p-2 bg-blue-600 rounded-lg">
-                <Dumbbell className="h-6 w-6 text-white" />
+            <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-2">
+                <div className="p-2 bg-blue-600 rounded-lg">
+                  <Dumbbell className="h-6 w-6 text-white" />
+                </div>
+                <span className="text-xl font-bold text-gray-900">MusclePal</span>
               </div>
-              <span className="text-xl font-bold text-gray-900">MusclePal</span>
+              
+              {/* Navigation Tabs */}
+              <nav className="hidden md:flex space-x-4">
+                <Link href="/dashboard" className="px-3 py-2 text-sm font-medium text-blue-600 border-b-2 border-blue-600">
+                  ダッシュボード
+                </Link>
+                <Link href="/posts" className="px-3 py-2 text-sm font-medium text-gray-500 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300 transition-colors">
+                  投稿
+                </Link>
+              </nav>
             </div>
             <div className="flex items-center space-x-4">
               <Button variant="ghost" size="sm">
@@ -225,10 +238,12 @@ async function DashboardContent({ userId }: { userId: string }) {
                 <CardTitle className="text-lg">クイックアクション</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button className="w-full justify-start" variant="outline">
-                  <Plus className="h-4 w-4 mr-2" />
-                  新しい投稿
-                </Button>
+                <Link href="/posts/new" className="w-full">
+                  <Button className="w-full justify-start" variant="outline">
+                    <Plus className="h-4 w-4 mr-2" />
+                    新しい投稿
+                  </Button>
+                </Link>
                 <Button className="w-full justify-start" variant="outline">
                   <Calendar className="h-4 w-4 mr-2" />
                   セッションを探す

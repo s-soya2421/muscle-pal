@@ -1,3 +1,5 @@
+import { cn } from "@/lib/utils";
+
 export function Spinner({ className = "h-5 w-5" }: { className?: string }) {
   return (
     <svg className={cn("animate-spin", className)} viewBox="0 0 24 24" fill="none">
