@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
@@ -14,24 +13,31 @@ import Link from "next/link";
 export default function NewPostPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     content: "",
-    category: "",
-    tags: ""
+    privacy: "public"
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError(null);
     
     try {
-      // TODO: 実際の投稿API呼び出し
-      await new Promise(resolve => setTimeout(resolve, 1000)); // 仮の遅延
+      const formDataObj = new FormData();
+      formDataObj.append("content", formData.content);
+      formDataObj.append("privacy", formData.privacy);
+
+      // Server Actionを呼び出し
+      const { createPost } = await import("@/app/actions/posts");
+      await createPost(formDataObj);
       
       // 投稿成功後、投稿一覧へリダイレクト
       router.push("/posts");
     } catch (error) {
       console.error("投稿の作成に失敗しました:", error);
+      setError(error instanceof Error ? error.message : "投稿に失敗しました");
     } finally {
       setIsSubmitting(false);
     }
@@ -61,6 +67,12 @@ export default function NewPostPage() {
           <CardTitle>投稿を作成</CardTitle>
         </CardHeader>
         <CardContent>
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md">
+              {error}
+            </div>
+          )}
+          
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="content">投稿内容 *</Label>
@@ -71,6 +83,7 @@ export default function NewPostPage() {
                 onChange={(e) => handleInputChange("content", e.target.value)}
                 required
                 rows={6}
+                maxLength={500}
                 className="resize-none"
               />
               <p className="text-sm text-muted-foreground">
@@ -78,39 +91,27 @@ export default function NewPostPage() {
               </p>
             </div>
 
+
             <div className="space-y-2">
-              <Label htmlFor="category">カテゴリー</Label>
+              <Label htmlFor="privacy">公開設定</Label>
               <Select 
-                id="category"
-                value={formData.category} 
-                onChange={(e) => handleInputChange("category", e.target.value)}
+                id="privacy"
+                value={formData.privacy} 
+                onChange={(e) => handleInputChange("privacy", e.target.value)}
               >
-                <option value="">カテゴリーを選択してください</option>
-                <option value="training">トレーニング</option>
-                <option value="nutrition">栄養・食事</option>
-                <option value="progress">進歩・成果</option>
-                <option value="motivation">モチベーション</option>
-                <option value="tips">アドバイス・コツ</option>
-                <option value="question">質問</option>
-                <option value="other">その他</option>
+                <option value="public">公開（全員が見れます）</option>
+                <option value="followers">フォロワーのみ</option>
+                <option value="private">非公開（自分のみ）</option>
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="tags">タグ (任意)</Label>
-              <Input
-                id="tags"
-                placeholder="例: 筋トレ, ベンチプレス, PR更新 (カンマ区切り)"
-                value={formData.tags}
-                onChange={(e) => handleInputChange("tags", e.target.value)}
-              />
-              <p className="text-sm text-muted-foreground">
-                関連するタグをカンマで区切って入力してください
-              </p>
-            </div>
 
             <div className="flex gap-3 pt-4">
-              <Button type="submit" disabled={!formData.content.trim() || isSubmitting} className="flex-1">
+              <Button 
+                type="submit" 
+                disabled={!formData.content.trim() || isSubmitting} 
+                className="flex-1"
+              >
                 <Send className="h-4 w-4 mr-2" />
                 {isSubmitting ? "投稿中..." : "投稿する"}
               </Button>

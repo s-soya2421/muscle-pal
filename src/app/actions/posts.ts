@@ -5,9 +5,15 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
 
 export async function createPost(formData: FormData) {
   const content = String(formData.get("content") || "").trim();
-  const image_url = (formData.get("image_url") as string) || null;
+  const privacy = String(formData.get("privacy") || "public") as "public" | "followers" | "private";
 
-  if (!content) return;
+  if (!content) {
+    throw new Error("投稿内容は必須です");
+  }
+
+  if (content.length > 500) {
+    throw new Error("投稿内容は500文字以内で入力してください");
+  }
 
   const supabase = await createServerClient();
   const {
@@ -16,22 +22,29 @@ export async function createPost(formData: FormData) {
   } = await supabase.auth.getUser();
 
   if (authError) {
-    console.error(authError);
+    console.error("認証エラー:", authError);
+    throw new Error("認証に失敗しました");
   }
+  
   if (!user) {
-    // クライアント側でUX的に弾くが、サーバでも最終防衛
     throw new Error("ログインが必要です");
   }
 
+  // 必要最小限のフィールドのみでpostsテーブルに挿入
   const { error } = await supabase
     .from("posts")
-    .insert({ user_id: user.id, content, image_url });
+    .insert({
+      author_id: user.id,
+      content,
+      privacy
+    });
 
   if (error) {
-    console.error(error);
+    console.error("投稿エラー:", error);
     throw new Error("投稿に失敗しました");
   }
 
-  // /posts のRSC結果を再検証
+  // /posts と /dashboard のRSC結果を再検証
   revalidatePath("/posts");
+  revalidatePath("/dashboard");
 }

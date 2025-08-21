@@ -18,9 +18,9 @@ type Profile = {
 };
 export type Post = {
   id: string;
-  user_id: string;
+  author_id: string; // user_idをauthor_idに修正
   content: string;
-  image_url: string | null;
+  image_url?: string | null;
   created_at: string;
   like_count?: number | null;
   comment_count?: number | null;
@@ -32,7 +32,7 @@ async function getPosts(): Promise<Post[]> {
   const supabase = await createServerClient();
   const { data, error } = await supabase
     .from("posts")
-    .select("id, user_id, content, image_url, created_at") // 必要に応じて profiles(*) を追加
+    .select("id, author_id, content, created_at") // author_idに修正
     .order("created_at", { ascending: false });
 
   if (error) {
