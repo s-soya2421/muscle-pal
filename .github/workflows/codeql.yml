@@ -1,0 +1,33 @@
+name: CodeQL
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '0 18 * * 1'  # UTC月曜18:00（JST火曜03:00）
+
+permissions:
+  security-events: write
+  contents: read
+
+jobs:
+  analyze:
+    name: セキュリティ解析
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: チェックアウト
+        uses: actions/checkout@v4
+
+      - name: CodeQL 初期化
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+
+      - name: 自動ビルド
+        uses: github/codeql-action/autobuild@v3
+
+      - name: CodeQL 解析実行
+        uses: github/codeql-action/analyze@v3

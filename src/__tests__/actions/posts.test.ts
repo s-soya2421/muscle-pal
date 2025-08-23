@@ -30,7 +30,7 @@ describe('createPost', () => {
       auth: {
         getUser: mockGetUser,
       },
-    } as any)
+    })
   })
 
   const createFormData = (content: string, privacy: string = 'public') => {

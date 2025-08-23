@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  #静的解析
+  lint_and_build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: チェックアウト
+        uses: actions/checkout@v4
+
+      - name: Node.js セットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          # pnpm使用時: pnpm/action-setup@v4 + cache: pnpm
+          # yarn使用時: cache: yarn
+
+      - name: 依存関係インストール
+        run: npm ci
+        # pnpm使用時: pnpm install --frozen-lockfile
+        # yarn使用時: yarn install --frozen-lockfile
+
+      - name: ESLint実行
+        run: npm run lint --if-present
+
+      - name: 型チェック実行
+        run: npm run typecheck --if-present
+
+      - name: ビルド実行（デプロイなし）
+        run: npm run build --if-present
+
+      - name: Docker ビルド（pushなし）
+        if: ${{ hashFiles('Dockerfile') != '' }}
+        run: docker build -t temp-image .
+  # テスト実行
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        node: [18, 20]
+      fail-fast: false
+    
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: チェックアウト
+        uses: actions/checkout@v4
+
+      - name: Node.js ${{ matrix.node }} セットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: 依存関係インストール
+        run: npm ci
+
+      - name: テスト実行
+        run: npm test --if-present

@@ -26,7 +26,7 @@ describe('PostsPage', () => {
     
     mockCreateServerClient.mockResolvedValue({
       from: mockFrom,
-    } as any)
+    })
   })
 
   it('renders loading skeleton initially', () => {
