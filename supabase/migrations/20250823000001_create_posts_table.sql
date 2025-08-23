@@ -109,6 +109,20 @@ CREATE TRIGGER posts_set_updated_at
 BEFORE UPDATE ON public.posts
 FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
+-- いいね数更新関数
+CREATE OR REPLACE FUNCTION public.update_post_like_count(p_post_id uuid)
+RETURNS void AS $$
+BEGIN
+  UPDATE public.posts 
+  SET like_count = (
+    SELECT COUNT(*) 
+    FROM public.post_likes 
+    WHERE post_id = p_post_id AND deleted_at IS NULL
+  )
+  WHERE id = p_post_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- 内容バリデーション：本文が空白のみのときは media が必要（既存制約チェック）
 DO $$
 BEGIN
