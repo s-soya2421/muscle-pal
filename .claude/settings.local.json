@@ -3,7 +3,12 @@
     "allow": [
       "Bash(npm uninstall:*)",
       "Bash(echo $HOME)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "mcp__serena__list_dir",
+      "Bash(npm run build:*)",
+      "mcp__serena__replace_symbol_body",
+      "mcp__serena__search_for_pattern",
+      "Bash(npm test:*)"
     ],
     "deny": []
   }
