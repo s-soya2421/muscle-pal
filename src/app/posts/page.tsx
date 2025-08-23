@@ -28,6 +28,7 @@ export type Post = {
   like_count: number;
   comment_count: number;
   created_at: string;
+  is_liked?: boolean;
   profiles?: Profile;
 };
 

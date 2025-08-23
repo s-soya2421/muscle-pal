@@ -3,6 +3,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { LikeButton } from "@/components/posts/like-button";
+import { MessageSquare } from "lucide-react";
 import type { Post } from "../page";
 
 export function PostCard({ post }: { post: Post }) {
@@ -101,11 +103,15 @@ export function PostCard({ post }: { post: Post }) {
         )}
 
         <div className="flex items-center gap-2 pt-1">
-          <Button variant="secondary" size="sm" disabled>
-            いいね {post.like_count || 0}
-          </Button>
-          <Button variant="ghost" size="sm" disabled>
-            コメント {post.comment_count || 0}
+          <LikeButton 
+            postId={post.id}
+            initialLikeCount={post.like_count || 0}
+            initialIsLiked={post.is_liked || false}
+            size="sm"
+          />
+          <Button variant="ghost" size="sm">
+            <MessageSquare className="h-4 w-4 mr-1" />
+            {post.comment_count || 0}
           </Button>
         </div>
       </CardContent>

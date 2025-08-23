@@ -73,6 +73,71 @@ export async function createPost(data: CreatePostData | FormData) {
   revalidatePath("/dashboard");
 }
 
+export async function togglePostLike(postId: string) {
+  const supabase = await createClient();
+  
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError) {
+    console.error("認証エラー:", authError);
+    throw new Error("認証に失敗しました");
+  }
+  
+  if (!user) {
+    throw new Error("ログインが必要です");
+  }
+
+  // Supabaseのtoggle_post_like関数を呼び出し
+  const { data, error } = await supabase.rpc('toggle_post_like', {
+    p_post_id: postId
+  });
+
+  if (error) {
+    console.error("いいねエラー:", error);
+    throw new Error("いいねに失敗しました");
+  }
+
+  // いいね数を更新（楽観的更新のため）
+  const { error: updateError } = await supabase.rpc('update_post_like_count', {
+    p_post_id: postId
+  });
+
+  if (updateError) {
+    console.log("いいね数更新警告:", updateError);
+    // エラーでもいいね操作は成功しているので続行
+  }
+
+  revalidatePath("/posts");
+  revalidatePath("/dashboard");
+  
+  return data; // true: いいね追加, false: いいね取り消し
+}
+
+export async function getPostLikeStatus(postId: string) {
+  const supabase = await createClient();
+  
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return false;
+  }
+
+  const { data, error } = await supabase
+    .from("post_likes")
+    .select("id")
+    .eq("post_id", postId)
+    .eq("user_id", user.id)
+    .is("deleted_at", null)
+    .single();
+
+  return !error && data;
+}
+
 export async function getPosts(options?: {
   userId?: string;
   limit?: number;
@@ -126,7 +191,25 @@ export async function getPosts(options?: {
     throw new Error("投稿の取得に失敗しました");
   }
 
-  return data || [];
+  // 各投稿のいいね状況を取得
+  const postsWithLikeStatus = await Promise.all(
+    (data || []).map(async (post) => {
+      const { data: likeData } = await supabase
+        .from("post_likes")
+        .select("id")
+        .eq("post_id", post.id)
+        .eq("user_id", user.id)
+        .is("deleted_at", null)
+        .single();
+
+      return {
+        ...post,
+        is_liked: !!likeData,
+      };
+    })
+  );
+
+  return postsWithLikeStatus;
 }
 
 export async function getUserProfile(userId: string) {

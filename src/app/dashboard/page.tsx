@@ -12,7 +12,6 @@ import {
   Calendar,
   MessageCircle,
   Search,
-  Heart,
   MessageSquare,
   Share2,
   MoreHorizontal,
@@ -22,6 +21,7 @@ import {
   Activity,
   TrendingUp,
 } from 'lucide-react';
+import { LikeButton } from '@/components/posts/like-button';
 
 export const metadata = {
   title: 'ダッシュボード | MusclePal',
@@ -339,10 +339,19 @@ async function DashboardContent({ userId }: { userId: string }) {
                         )}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-4">
-                            <Button variant="ghost" size="sm" className="text-gray-600">
-                              <Heart className="h-4 w-4 mr-1" />
-                              {post.like_count || post.likes || 0}
-                            </Button>
+                            {post.id ? (
+                              <LikeButton 
+                                postId={post.id}
+                                initialLikeCount={post.like_count || post.likes || 0}
+                                initialIsLiked={post.is_liked || false}
+                                size="sm"
+                              />
+                            ) : (
+                              <Button variant="ghost" size="sm" className="text-gray-600">
+                                <MessageSquare className="h-4 w-4 mr-1" />
+                                {post.like_count || post.likes || 0}
+                              </Button>
+                            )}
                             <Button variant="ghost" size="sm" className="text-gray-600">
                               <MessageSquare className="h-4 w-4 mr-1" />
                               {post.comment_count || post.comments || 0}
