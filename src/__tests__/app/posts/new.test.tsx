@@ -10,7 +10,7 @@ jest.mock('@/app/actions/posts', () => ({
 }))
 
 // Import mocked functions
-const { createPost } = require('@/app/actions/posts')
+import { createPost } from '@/app/actions/posts'
 
 const mockUseRouter = useRouter as jest.MockedFunction<typeof useRouter>
 const mockCreatePost = createPost as jest.MockedFunction<typeof createPost>
