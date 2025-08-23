@@ -16,7 +16,6 @@ import {
   MessageSquare,
   Share2,
   MoreHorizontal,
-  Camera,
   Bell,
   Settings,
   User,
@@ -104,31 +103,37 @@ function DashboardSkeleton() {
 
 // Main Dashboard Content Component
 async function DashboardContent({ userId }: { userId: string }) {
-  // Import mock data
+  // Import server actions and mock data
+  const { getPosts, getUserProfile } = await import('@/app/actions/posts');
   const {
-    getCurrentUser,
     mockStats,
-    mockTimelinePosts,
     mockUpcomingSessions,
     mockActiveChallenges,
     mockUserRecommendations,
   } = await import('@/lib/mock-data');
 
-  // TODO: 実際のプロダクションでは、userIdを使用してSupabaseからユーザーデータを取得
-  console.log('Dashboard for user:', userId);
-  // const [userProfile, dashboardStats, timelinePosts] = await Promise.all([
-  //   fetchUserProfile(userId),
-  //   fetchDashboardStats(userId),
-  //   fetchUserTimeline(userId)
-  // ]);
+  // 実際のデータを取得
+  let userProfile = null;
+  let timelinePosts: any[] = [];
+  
+  try {
+    // ユーザープロフィールを取得
+    userProfile = await getUserProfile(userId);
+    // 投稿を取得（最新10件）
+    timelinePosts = await getPosts({ limit: 10 });
+  } catch (error) {
+    console.error('データ取得エラー:', error);
+    // エラー時はモックデータを使用
+    const { getCurrentUser, mockTimelinePosts } = await import('@/lib/mock-data');
+    userProfile = getCurrentUser();
+    timelinePosts = mockTimelinePosts;
+  }
 
-  // モックデータを使用
-  const currentUser = getCurrentUser();
+  // 現在はモックデータを使用（後で実データに置き換え）
   const stats = mockStats;
-  const timelinePosts = mockTimelinePosts;
-  const upcomingSessions = mockUpcomingSessions.slice(0, 2); // 上位2件のみ表示
-  const activeChallenges = mockActiveChallenges.slice(0, 2); // 上位2件のみ表示
-  const userRecommendations = mockUserRecommendations.slice(0, 2); // 上位2件のみ表示
+  const upcomingSessions = mockUpcomingSessions.slice(0, 2);
+  const activeChallenges = mockActiveChallenges.slice(0, 2);
+  const userRecommendations = mockUserRecommendations.slice(0, 2);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -181,13 +186,19 @@ async function DashboardContent({ userId }: { userId: string }) {
                     <User className="h-10 w-10 text-blue-600" />
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                    {currentUser.name}
+                    {userProfile?.display_name || 'ユーザー'}
                   </h3>
-                  <p className="text-sm text-gray-500 mb-4">{currentUser.level}</p>
-                  <Button size="sm" className="w-full">
-                    <Settings className="h-4 w-4 mr-2" />
-                    プロフィール編集
-                  </Button>
+                  <p className="text-sm text-gray-500 mb-4">
+                    {userProfile?.fitness_level === 'beginner' && '初心者'}
+                    {userProfile?.fitness_level === 'intermediate' && '中級者'}  
+                    {userProfile?.fitness_level === 'advanced' && '上級者'}
+                  </p>
+                  <Link href="/profile/edit">
+                    <Button size="sm" className="w-full">
+                      <Settings className="h-4 w-4 mr-2" />
+                      プロフィール編集
+                    </Button>
+                  </Link>
                 </div>
               </CardContent>
             </Card>
@@ -262,7 +273,7 @@ async function DashboardContent({ userId }: { userId: string }) {
             <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
               <CardContent className="p-6">
                 <h2 className="text-xl font-semibold mb-2">
-                  おかえりなさい、{currentUser.name.split(' ')[1]}さん！
+                  おかえりなさい、{userProfile?.display_name || 'ユーザー'}さん！
                 </h2>
                 <p className="text-blue-100 mb-4">
                   今日も素晴らしいトレーニングを始めましょう。コミュニティの仲間があなたを応援しています。
@@ -290,7 +301,7 @@ async function DashboardContent({ userId }: { userId: string }) {
 
             {/* Timeline Posts */}
             <div className="space-y-6">
-              {timelinePosts.map((post) => (
+              {timelinePosts.length > 0 ? timelinePosts.map((post) => (
                 <Card key={post.id}>
                   <CardContent className="p-6">
                     <div className="flex items-start space-x-3">
@@ -299,25 +310,42 @@ async function DashboardContent({ userId }: { userId: string }) {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2 mb-2">
-                          <h4 className="font-semibold text-gray-900">{post.author}</h4>
-                          <span className="text-xs text-gray-500">{post.timestamp}</span>
+                          <h4 className="font-semibold text-gray-900">
+                            {post.profiles?.display_name || post.author || 'Unknown User'}
+                          </h4>
+                          <span className="text-xs text-gray-500">
+                            {post.created_at ? new Date(post.created_at).toLocaleDateString('ja-JP') : post.timestamp}
+                          </span>
+                          {post.post_type && post.post_type !== 'general' && (
+                            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                              {post.post_type === 'workout' && 'ワークアウト'}
+                              {post.post_type === 'progress' && '進歩報告'}
+                              {post.post_type === 'motivation' && 'モチベーション'}
+                            </span>
+                          )}
                         </div>
                         <p className="text-gray-700 mb-4 whitespace-pre-line">{post.content}</p>
-                        {post.hasImage && (
-                          <div className="w-full h-48 bg-gray-200 rounded-lg flex items-center justify-center mb-4">
-                            <Camera className="h-8 w-8 text-gray-400" />
-                            <span className="ml-2 text-gray-500">トレーニング画像</span>
+                        {post.tags && post.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mb-4">
+                            {post.tags.map((tag: string) => (
+                              <span key={tag} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                                #{tag}
+                              </span>
+                            ))}
                           </div>
+                        )}
+                        {post.location && (
+                          <p className="text-xs text-gray-500 mb-2">📍 {post.location}</p>
                         )}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-4">
                             <Button variant="ghost" size="sm" className="text-gray-600">
                               <Heart className="h-4 w-4 mr-1" />
-                              {post.likes}
+                              {post.like_count || post.likes || 0}
                             </Button>
                             <Button variant="ghost" size="sm" className="text-gray-600">
                               <MessageSquare className="h-4 w-4 mr-1" />
-                              {post.comments}
+                              {post.comment_count || post.comments || 0}
                             </Button>
                             <Button variant="ghost" size="sm" className="text-gray-600">
                               <Share2 className="h-4 w-4" />
@@ -331,7 +359,19 @@ async function DashboardContent({ userId }: { userId: string }) {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              )) : (
+                <Card>
+                  <CardContent className="p-6 text-center">
+                    <p className="text-gray-500 mb-4">まだ投稿がありません</p>
+                    <Link href="/posts/new">
+                      <Button>
+                        <Plus className="h-4 w-4 mr-2" />
+                        最初の投稿を作成
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
 

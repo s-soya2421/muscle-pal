@@ -1,6 +1,5 @@
 // app/posts/page.tsx
 import { Suspense } from "react";
-import { createClient as createServerClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,36 +9,37 @@ import { Dumbbell, Search, Plus, Bell, MessageCircle, User } from "lucide-react"
 import Link from "next/link";
 import { PostCard } from "./_components/post-card";
 
-// --- Types（マイグレーション想定） ---
+// --- Types ---
 type Profile = {
-  id: string;
   username: string | null;
+  display_name: string | null;
   avatar_url: string | null;
+  fitness_level: string | null;
 };
 export type Post = {
   id: string;
-  author_id: string; // user_idをauthor_idに修正
+  author_id: string;
   content: string;
-  image_url?: string | null;
+  post_type: string;
+  privacy: string;
+  tags: string[];
+  location: string | null;
+  workout_data: any;
+  like_count: number;
+  comment_count: number;
   created_at: string;
-  like_count?: number | null;
-  comment_count?: number | null;
-  profiles?: Profile; // もしviewやjoinを作ってるならここに入る
+  profiles?: Profile;
 };
 
 // --- Data fetch on the server ---
-async function getPosts(): Promise<Post[]> {
-  const supabase = await createServerClient();
-  const { data, error } = await supabase
-    .from("posts")
-    .select("id, author_id, content, created_at") // author_idに修正
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    console.error(error);
+async function getPostsData(): Promise<Post[]> {
+  try {
+    const { getPosts } = await import('@/app/actions/posts');
+    return await getPosts({ limit: 20 });
+  } catch (error) {
+    console.error('投稿取得エラー:', error);
     return [];
   }
-  return data ?? [];
 }
 
 // --- Server Component Page ---
@@ -147,7 +147,7 @@ export default async function PostsPage() {
 
 // --- Async Server Component for listing ---
 async function PostsList() {
-  const posts = await getPosts();
+  const posts = await getPostsData();
   if (!posts.length) {
     return (
       <div className="text-center py-12">

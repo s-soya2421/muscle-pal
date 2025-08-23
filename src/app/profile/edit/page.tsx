@@ -1,16 +1,16 @@
 import { Suspense } from 'react';
 import { Metadata } from 'next';
-import { CreatePostForm } from '@/components/posts/create-post-form';
-import { CreatePostSkeleton } from '@/components/posts/create-post-skeleton';
+import { ProfileEditForm } from '@/components/profile/profile-edit-form';
+import { ProfileEditSkeleton } from '@/components/profile/profile-edit-skeleton';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
-  title: '新しい投稿 - MusclePal',
-  description: 'フィットネスの進歩や体験をシェアしましょう',
+  title: 'プロフィール編集 - MusclePal',
+  description: 'あなたのプロフィール情報を編集します',
 };
 
-export default async function NewPostPage() {
+export default async function ProfileEditPage() {
   const supabase = await createClient();
 
   const {
@@ -25,15 +25,15 @@ export default async function NewPostPage() {
     <div className="container mx-auto px-4 py-8 max-w-2xl">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          新しい投稿
+          プロフィール編集
         </h1>
         <p className="text-gray-600">
-          あなたのフィットネスの進歩や体験をシェアしましょう！
+          あなたの情報を更新して、コミュニティとのつながりを深めましょう
         </p>
       </div>
 
-      <Suspense fallback={<CreatePostSkeleton />}>
-        <CreatePostForm userId={user.id} />
+      <Suspense fallback={<ProfileEditSkeleton />}>
+        <ProfileEditForm userId={user.id} />
       </Suspense>
     </div>
   );
