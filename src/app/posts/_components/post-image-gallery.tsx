@@ -56,7 +56,7 @@ export function PostImageGallery({ images }: PostImageGalleryProps) {
   return (
     <>
       {/* Image Grid */}
-      <div className={`grid ${getGridClass()} gap-2 rounded-lg overflow-hidden`}>
+      <div data-testid="post-image-gallery" className={`grid ${getGridClass()} gap-2 rounded-lg overflow-hidden`}>
         {images.map((image, index) => (
           <div
             key={index}

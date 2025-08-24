@@ -84,6 +84,42 @@ if (typeof window !== 'undefined') {
 // Node.js specific mocks when window is not available
 if (typeof window === 'undefined') {
   // Mock global Request for Server Actions
+  global.Request = class Request {
+    constructor(input, init) {
+      this.url = input
+      this.method = init?.method || 'GET'
+      this.headers = new Map(Object.entries(init?.headers || {}))
+      this.body = init?.body
+    }
+  }
+
+  global.Response = class Response {
+    constructor(body, init) {
+      this.body = body
+      this.status = init?.status || 200
+      this.statusText = init?.statusText || 'OK'
+      this.headers = new Map(Object.entries(init?.headers || {}))
+    }
+  }
+
+  global.Headers = class Headers {
+    constructor(init) {
+      this.map = new Map(Object.entries(init || {}))
+    }
+    
+    get(name) {
+      return this.map.get(name)
+    }
+    
+    set(name, value) {
+      this.map.set(name, value)
+    }
+    
+    has(name) {
+      return this.map.has(name)
+    }
+  }
+  
   global.FormData = class FormData {
     constructor() {
       this.data = new Map()

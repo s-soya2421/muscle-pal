@@ -2,24 +2,45 @@ import { render, screen } from '@testing-library/react'
 import { PostCard } from '@/app/posts/_components/post-card'
 import type { Post } from '@/app/posts/page'
 
+// Mock Next.js Link component
+jest.mock('next/link', () => {
+  return function MockLink({ children, href }: { children: React.ReactNode; href: string }) {
+    return <a href={href}>{children}</a>
+  }
+})
+
+// Mock components
+jest.mock('@/components/posts/like-button', () => ({
+  LikeButton: ({ postId, initialLikeCount }: { postId: string; initialLikeCount: number }) => (
+    <div data-testid="like-button">{initialLikeCount}</div>
+  ),
+}))
+
+jest.mock('@/app/posts/_components/post-image-gallery', () => ({
+  PostImageGallery: ({ images }: { images: string[] }) => (
+    <div data-testid="post-image-gallery">Gallery with {images.length} images</div>
+  ),
+}))
+
 describe('PostCard', () => {
   const mockPost: Post = {
     id: '1',
     author_id: 'user1',
     content: 'テスト投稿の内容です',
-    created_at: '2024-01-01T12:00:00Z',
-    image_url: null,
+    post_type: 'general',
+    privacy: 'public',
+    tags: ['fitness', 'workout'],
+    location: 'Tokyo, Japan',
+    workout_data: null,
     like_count: 5,
     comment_count: 3,
+    created_at: '2024-01-01T12:00:00Z',
+    is_liked: false,
     profiles: {
-      id: 'user1',
       username: 'testuser',
       display_name: 'テストユーザー',
       avatar_url: null,
-      bio: null,
-      created_at: '2024-01-01T00:00:00Z',
-      updated_at: '2024-01-01T00:00:00Z',
-      deleted_at: null,
+      fitness_level: 'intermediate',
     },
   }
 
@@ -27,7 +48,8 @@ describe('PostCard', () => {
     render(<PostCard post={mockPost} />)
     
     expect(screen.getByText('テスト投稿の内容です')).toBeInTheDocument()
-    expect(screen.getByText('testuser')).toBeInTheDocument()
+    expect(screen.getByText('テストユーザー')).toBeInTheDocument()
+    expect(screen.getByText('📍 Tokyo, Japan')).toBeInTheDocument()
   })
 
   it('displays formatted creation date', () => {
@@ -40,21 +62,39 @@ describe('PostCard', () => {
   it('shows like and comment counts', () => {
     render(<PostCard post={mockPost} />)
     
-    expect(screen.getByText('いいね 5')).toBeInTheDocument()
-    expect(screen.getByText('コメント 3')).toBeInTheDocument()
+    expect(screen.getByText('5')).toBeInTheDocument() // like count
+    expect(screen.getByText('3')).toBeInTheDocument() // comment count
+  })
+
+  it('displays post type badge for workout posts', () => {
+    const workoutPost: Post = {
+      ...mockPost,
+      post_type: 'workout'
+    }
+    
+    render(<PostCard post={workoutPost} />)
+    
+    expect(screen.getByText('ワークアウト')).toBeInTheDocument()
+  })
+
+  it('shows tags when provided', () => {
+    render(<PostCard post={mockPost} />)
+    
+    expect(screen.getByText('#fitness')).toBeInTheDocument()
+    expect(screen.getByText('#workout')).toBeInTheDocument()
   })
 
   it('shows default counts when not provided', () => {
     const postWithoutCounts: Post = {
       ...mockPost,
-      like_count: null,
+      like_count: 0,
       comment_count: null,
     }
     
     render(<PostCard post={postWithoutCounts} />)
     
-    expect(screen.getByText('いいね 0')).toBeInTheDocument()
-    expect(screen.getByText('コメント 0')).toBeInTheDocument()
+    expect(screen.getByText('0')).toBeInTheDocument() // like count
+    expect(screen.getByText('0')).toBeInTheDocument() // comment count
   })
 
   it('displays user avatar when available', () => {

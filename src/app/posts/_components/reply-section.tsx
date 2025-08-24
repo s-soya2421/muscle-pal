@@ -111,7 +111,7 @@ export function ReplySection({ postId, replies }: ReplySectionProps) {
   };
 
   return (
-    <div className="space-y-4">
+    <div data-testid="reply-section" className="space-y-4">
       {/* Reply Form */}
       <Card>
         <CardHeader className="pb-3">
