@@ -23,11 +23,13 @@ export type Post = {
   privacy: string;
   tags: string[];
   location: string | null;
-  workout_data: any;
+  workout_data: Record<string, unknown>;
   like_count: number;
   comment_count: number;
   created_at: string;
   is_liked?: boolean;
+  images?: Array<{ url: string; alt?: string }>;
+  media_urls?: string[]; // 後方互換性のため
   profiles?: Profile;
 };
 

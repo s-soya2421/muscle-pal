@@ -9,7 +9,8 @@ interface CreatePostData {
   post_type: "workout" | "progress" | "motivation" | "general";
   tags?: string[];
   location?: string;
-  workout_data?: any;
+  workout_data?: Record<string, unknown>;
+  images?: Array<{ url: string; alt?: string }>;
 }
 
 export async function createPost(data: CreatePostData | FormData) {
@@ -18,7 +19,8 @@ export async function createPost(data: CreatePostData | FormData) {
   let post_type: "workout" | "progress" | "motivation" | "general";
   let tags: string[] = [];
   let location: string | undefined;
-  let workout_data: any;
+  let workout_data: Record<string, unknown>;
+  let images: Array<{ url: string; alt?: string }> = [];
 
   // FormData か通常のオブジェクトかを判定
   if (data instanceof FormData) {
@@ -26,7 +28,7 @@ export async function createPost(data: CreatePostData | FormData) {
     privacy = String(data.get("privacy") || "public") as "public" | "followers" | "private";
     post_type = "general"; // FormDataの場合はデフォルト
   } else {
-    ({ content, privacy, post_type, tags = [], location, workout_data } = data);
+    ({ content, privacy, post_type, tags = [], location, workout_data, images = [] } = data);
   }
 
   if (!content?.trim()) {
@@ -52,7 +54,7 @@ export async function createPost(data: CreatePostData | FormData) {
     throw new Error("ログインが必要です");
   }
 
-  const { error } = await supabase
+  const { data: postData, error } = await supabase
     .from("posts")
     .insert({
       author_id: user.id,
@@ -62,7 +64,10 @@ export async function createPost(data: CreatePostData | FormData) {
       tags,
       location: location || null,
       workout_data: workout_data || {},
-    });
+      images: images.length > 0 ? images : null,
+    })
+    .select()
+    .single();
 
   if (error) {
     console.error("投稿エラー:", error);
