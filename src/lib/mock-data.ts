@@ -35,8 +35,20 @@ export interface MockPost {
   comments: number;
   hasImage: boolean;
   imageUrl?: string;
+  images?: string[]; // 最大4枚の画像
   workoutType?: string;
   location?: string;
+  replies: MockReply[];
+}
+
+export interface MockReply {
+  id: string;
+  authorId: string;
+  author: string;
+  authorAvatar?: string;
+  content: string;
+  timestamp: string;
+  likes: number;
 }
 
 export interface MockSession {
@@ -140,8 +152,30 @@ export const mockTimelinePosts: MockPost[] = [
     likes: 15,
     comments: 3,
     hasImage: true,
+    images: [
+      '/images/workouts/deadlift-pr-1.jpg',
+      '/images/workouts/deadlift-pr-2.jpg'
+    ],
     workoutType: 'デッドリフト',
     location: 'ゴールドジム横浜',
+    replies: [
+      {
+        id: 'reply-1-1',
+        authorId: 'user-1',
+        author: '田中 太郎',
+        content: 'すごいですね！私も150kg目指して頑張ります💪',
+        timestamp: '1時間前',
+        likes: 3,
+      },
+      {
+        id: 'reply-1-2',
+        authorId: 'user-3',
+        author: '山田 花子',
+        content: 'おめでとうございます🎉 フォームがとても綺麗ですね！',
+        timestamp: '45分前',
+        likes: 2,
+      },
+    ],
   },
   {
     id: 'post-2',
@@ -151,9 +185,24 @@ export const mockTimelinePosts: MockPost[] = [
     timestamp: '4時間前',
     likes: 8,
     comments: 2,
-    hasImage: false,
+    hasImage: true,
+    images: [
+      '/images/workouts/yoga-session-1.jpg',
+      '/images/workouts/yoga-session-2.jpg',
+      '/images/workouts/yoga-session-3.jpg'
+    ],
     workoutType: 'ヨガ',
     location: 'スタジオ・オム',
+    replies: [
+      {
+        id: 'reply-2-1',
+        authorId: 'user-1',
+        author: '田中 太郎',
+        content: '朝ヨガいいですね！今度参加してみたいです',
+        timestamp: '3時間前',
+        likes: 1,
+      },
+    ],
   },
   {
     id: 'post-3',
@@ -164,10 +213,34 @@ export const mockTimelinePosts: MockPost[] = [
     likes: 12,
     comments: 5,
     hasImage: true,
+    images: [
+      '/images/workouts/weekly-routine-1.jpg',
+      '/images/workouts/weekly-routine-2.jpg',
+      '/images/workouts/weekly-routine-3.jpg',
+      '/images/workouts/weekly-routine-4.jpg'
+    ],
     workoutType: '筋力トレーニング',
     location: 'エニタイムフィットネス渋谷',
+    replies: [
+      {
+        id: 'reply-3-1',
+        authorId: 'user-2',
+        author: '佐藤 健',
+        content: '素晴らしいルーティンですね！継続が力になります',
+        timestamp: '20時間前',
+        likes: 4,
+      },
+      {
+        id: 'reply-3-2',
+        authorId: 'user-3',
+        author: '山田 花子',
+        content: '計画的で参考になります。私も見習います！',
+        timestamp: '18時間前',
+        likes: 2,
+      },
+    ],
   },
-];
+];;
 
 // Mock Upcoming Sessions
 export const mockUpcomingSessions: MockSession[] = [

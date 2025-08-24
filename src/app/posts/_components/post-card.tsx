@@ -5,18 +5,29 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LikeButton } from "@/components/posts/like-button";
 import { MessageSquare } from "lucide-react";
+import Link from "next/link";
 import type { Post } from "../page";
+import { MockPost } from "@/lib/mock-data";
+import { PostImageGallery } from "./post-image-gallery";
 
-export function PostCard({ post }: { post: Post }) {
-  const created = new Date(post.created_at);
-  const when = created.toLocaleString('ja-JP', {
+interface PostCardProps {
+  post: Post | MockPost;
+}
+
+export function PostCard({ post }: PostCardProps) {
+  // MockPost と Post の両方に対応
+  const isPost = 'created_at' in post;
+  const created = isPost ? new Date(post.created_at) : null;
+  const when = isPost ? created?.toLocaleString('ja-JP', {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
-  });
+  }) : (post as MockPost).timestamp;
 
-  const displayName = post.profiles?.display_name || post.profiles?.username || 'ユーザー';
+  const displayName = isPost 
+    ? (post as Post).profiles?.display_name || (post as Post).profiles?.username || 'ユーザー'
+    : (post as MockPost).author;
   const initials = displayName
     .split(" ")
     .map((s) => s?.[0] ?? "")
@@ -34,41 +45,47 @@ export function PostCard({ post }: { post: Post }) {
   };
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-start gap-3">
+    <div className="flex gap-3">
+      <Link href={`/posts/${post.id}`} className="flex-shrink-0">
         <Avatar>
-          {post.profiles?.avatar_url && <AvatarImage src={post.profiles.avatar_url} />}
+          {isPost && (post as Post).profiles?.avatar_url && <AvatarImage src={(post as Post).profiles?.avatar_url || ''} />}
+          {!isPost && (post as MockPost).authorAvatar && <AvatarImage src={(post as MockPost).authorAvatar || ''} />}
           <AvatarFallback>{initials}</AvatarFallback>
         </Avatar>
-        <div className="grid gap-1 flex-1">
-          <div className="flex items-center gap-2">
-            <CardTitle className="text-base leading-tight">
-              {displayName}
-            </CardTitle>
-            {post.post_type && post.post_type !== 'general' && (
+      </Link>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 text-sm">
+          <Link href={`/posts/${post.id}`} className="font-semibold text-gray-900 hover:underline">
+            {displayName}
+          </Link>
+          <span className="text-gray-500">·</span>
+          <span className="text-gray-500">{when}</span>
+          {isPost && (post as Post).post_type && (post as Post).post_type !== 'general' && (
+            <>
+              <span className="text-gray-500">·</span>
               <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                {getPostTypeLabel(post.post_type)}
+                {getPostTypeLabel((post as Post).post_type)}
               </span>
-            )}
-          </div>
-          <span className="text-xs text-muted-foreground">{when}</span>
-          {post.profiles?.fitness_level && (
-            <span className="text-xs text-gray-500">
-              {post.profiles.fitness_level === 'beginner' && '初心者'}
-              {post.profiles.fitness_level === 'intermediate' && '中級者'}
-              {post.profiles.fitness_level === 'advanced' && '上級者'}
-            </span>
+            </>
+          )}
+          {!isPost && (post as MockPost).workoutType && (
+            <>
+              <span className="text-gray-500">·</span>
+              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                {(post as MockPost).workoutType}
+              </span>
+            </>
           )}
         </div>
-      </CardHeader>
-
-      <CardContent className="space-y-3">
-        <p className="whitespace-pre-wrap text-sm">{post.content}</p>
+        
+        <Link href={`/posts/${post.id}`} className="block hover:opacity-75 transition-opacity mt-2">
+          <p className="whitespace-pre-wrap text-gray-900 leading-relaxed">{post.content}</p>
+        </Link>
         
         {/* タグ表示 */}
-        {post.tags && post.tags.length > 0 && (
+        {isPost && (post as Post).tags && (post as Post).tags.length > 0 && (
           <div className="flex flex-wrap gap-1">
-            {post.tags.map((tag) => (
+            {(post as Post).tags.map((tag) => (
               <span key={tag} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
                 #{tag}
               </span>
@@ -77,15 +94,25 @@ export function PostCard({ post }: { post: Post }) {
         )}
 
         {/* 場所表示 */}
-        {post.location && (
-          <p className="text-xs text-gray-500">📍 {post.location}</p>
+        {((isPost && (post as Post).location) || (!isPost && (post as MockPost).location)) && (
+          <p className="text-sm text-gray-500 mt-2">📍 {isPost ? (post as Post).location : (post as MockPost).location}</p>
         )}
 
+        {/* 画像表示 */}
+        {!isPost && (() => {
+          const mockPost = post as MockPost;
+          return mockPost.images && mockPost.images.length > 0 && (
+            <div className="mt-3">
+              <PostImageGallery images={mockPost.images} />
+            </div>
+          );
+        })()}
+
         {/* ワークアウトデータ表示 */}
-        {post.post_type === 'workout' && post.workout_data?.exercises && post.workout_data.exercises.length > 0 && (
+        {isPost && (post as Post).post_type === 'workout' && (post as Post).workout_data?.exercises && (post as Post).workout_data.exercises.length > 0 && (
           <div className="bg-gray-50 rounded-lg p-3 space-y-2">
             <h4 className="text-sm font-medium text-gray-700">ワークアウト詳細</h4>
-            {post.workout_data.exercises.slice(0, 3).map((exercise: any, index: number) => (
+            {(post as Post).workout_data.exercises.slice(0, 3).map((exercise: any, index: number) => (
               <div key={index} className="text-xs text-gray-600">
                 <span className="font-medium">{exercise.name}</span>
                 {exercise.sets && exercise.reps && (
@@ -96,25 +123,43 @@ export function PostCard({ post }: { post: Post }) {
                 )}
               </div>
             ))}
-            {post.workout_data.exercises.length > 3 && (
-              <p className="text-xs text-gray-500">+{post.workout_data.exercises.length - 3}件の種目</p>
+            {(post as Post).workout_data.exercises.length > 3 && (
+              <p className="text-xs text-gray-500">+{(post as Post).workout_data.exercises.length - 3}件の種目</p>
             )}
           </div>
         )}
 
-        <div className="flex items-center gap-2 pt-1">
-          <LikeButton 
-            postId={post.id}
-            initialLikeCount={post.like_count || 0}
-            initialIsLiked={post.is_liked || false}
-            size="sm"
-          />
-          <Button variant="ghost" size="sm">
-            <MessageSquare className="h-4 w-4 mr-1" />
-            {post.comment_count || 0}
-          </Button>
+        <div className="flex items-center gap-12 mt-3 text-gray-500">
+          {isPost ? (
+            <LikeButton 
+              postId={post.id}
+              initialLikeCount={(post as Post).like_count || 0}
+              initialIsLiked={(post as Post).is_liked || false}
+              size="sm"
+            />
+          ) : (
+            <button className="flex items-center gap-2 hover:text-red-500 transition-colors group">
+              <div className="p-2 rounded-full group-hover:bg-red-50">
+                ❤️
+              </div>
+              <span className="text-sm">{(post as MockPost).likes}</span>
+            </button>
+          )}
+          <Link href={`/posts/${post.id}`} className="flex items-center gap-2 hover:text-blue-500 transition-colors group">
+            <div className="p-2 rounded-full group-hover:bg-blue-50">
+              <MessageSquare className="h-4 w-4" />
+            </div>
+            <span className="text-sm">{isPost ? ((post as Post).comment_count || 0) : (post as MockPost).comments}</span>
+          </Link>
+          <button className="flex items-center gap-2 hover:text-green-500 transition-colors group">
+            <div className="p-2 rounded-full group-hover:bg-green-50">
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+              </svg>
+            </div>
+          </button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

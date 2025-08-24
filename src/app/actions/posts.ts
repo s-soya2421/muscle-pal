@@ -191,9 +191,10 @@ export async function getPosts(options?: {
     throw new Error("投稿の取得に失敗しました");
   }
 
-  // 各投稿のいいね状況を取得
+  // 各投稿のいいね状況を取得（like_count, comment_countはDBカラムを使用）
   const postsWithLikeStatus = await Promise.all(
     (data || []).map(async (post) => {
+      // ユーザーがいいねしているかチェック
       const { data: likeData } = await supabase
         .from("post_likes")
         .select("id")
@@ -228,4 +229,162 @@ export async function getUserProfile(userId: string) {
   }
 
   return data;
+}
+
+export async function getPostById(postId: string) {
+  const supabase = await createClient();
+  
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("ログインが必要です");
+  }
+
+  // 投稿の詳細を取得
+  const { data: postData, error: postError } = await supabase
+    .from("posts")
+    .select(`
+      *,
+      profiles:author_id (
+        username,
+        display_name,
+        avatar_url,
+        fitness_level
+      )
+    `)
+    .eq("id", postId)
+    .is("deleted_at", null)
+    .single();
+
+  if (postError || !postData) {
+    throw new Error("投稿が見つかりません");
+  }
+
+  // いいね数を取得
+  const { data: likeCountData } = await supabase
+    .from("post_likes")
+    .select("id")
+    .eq("post_id", postId)
+    .is("deleted_at", null);
+
+  // ユーザーのいいね状況を取得
+  const { data: likeData } = await supabase
+    .from("post_likes")
+    .select("id")
+    .eq("post_id", postId)
+    .eq("user_id", user.id)
+    .is("deleted_at", null)
+    .single();
+
+  // コメント数を取得
+  const { data: commentCountData } = await supabase
+    .from("post_comments")
+    .select("id")
+    .eq("post_id", postId)
+    .is("deleted_at", null);
+
+  return {
+    ...postData,
+    like_count: likeCountData?.length || 0,
+    is_liked: !!likeData,
+    comment_count: commentCountData?.length || 0,
+  };
+}
+
+export async function getPostComments(postId: string) {
+  const supabase = await createClient();
+  
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("ログインが必要です");
+  }
+
+  // トップレベルコメントを取得
+  const { data: commentsData, error } = await supabase
+    .from("post_comments")
+    .select(`
+      *,
+      profiles:author_id (
+        username,
+        display_name,
+        avatar_url
+      )
+    `)
+    .eq("post_id", postId)
+    .is("parent_comment_id", null)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error("コメント取得エラー:", error);
+    throw new Error("コメントの取得に失敗しました");
+  }
+
+  // 各コメントのいいね数を取得
+  const commentsWithLikes = await Promise.all(
+    (commentsData || []).map(async (comment) => {
+      const { data: likeCountData } = await supabase
+        .from("post_likes")
+        .select("id")
+        .eq("post_id", comment.id)
+        .is("deleted_at", null);
+
+      return {
+        ...comment,
+        likes: likeCountData?.length || 0,
+      };
+    })
+  );
+
+  return commentsWithLikes;
+}
+
+export async function createComment(postId: string, content: string) {
+  if (!content?.trim()) {
+    throw new Error("コメント内容は必須です");
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error("認証に失敗しました");
+  }
+
+  const { data, error } = await supabase
+    .from("post_comments")
+    .insert({
+      post_id: postId,
+      author_id: user.id,
+      content: content.trim(),
+    })
+    .select(`
+      *,
+      profiles:author_id (
+        username,
+        display_name,
+        avatar_url
+      )
+    `)
+    .single();
+
+  if (error) {
+    console.error("コメント投稿エラー:", error);
+    throw new Error("コメントの投稿に失敗しました");
+  }
+
+  revalidatePath(`/posts/${postId}`);
+  
+  return {
+    ...data,
+    likes: 0, // 新しいコメントはいいね数0
+  };
 }

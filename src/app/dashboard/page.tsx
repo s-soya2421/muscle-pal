@@ -13,15 +13,13 @@ import {
   MessageCircle,
   Search,
   MessageSquare,
-  Share2,
-  MoreHorizontal,
   Bell,
   Settings,
   User,
   Activity,
   TrendingUp,
 } from 'lucide-react';
-import { LikeButton } from '@/components/posts/like-button';
+import { PostCard } from '@/app/posts/_components/post-card';
 
 export const metadata = {
   title: 'ダッシュボード | MusclePal',
@@ -302,72 +300,7 @@ async function DashboardContent({ userId }: { userId: string }) {
             {/* Timeline Posts */}
             <div className="space-y-6">
               {timelinePosts.length > 0 ? timelinePosts.map((post) => (
-                <Card key={post.id}>
-                  <CardContent className="p-6">
-                    <div className="flex items-start space-x-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                        <User className="h-5 w-5 text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <h4 className="font-semibold text-gray-900">
-                            {post.profiles?.display_name || post.author || 'Unknown User'}
-                          </h4>
-                          <span className="text-xs text-gray-500">
-                            {post.created_at ? new Date(post.created_at).toLocaleDateString('ja-JP') : post.timestamp}
-                          </span>
-                          {post.post_type && post.post_type !== 'general' && (
-                            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                              {post.post_type === 'workout' && 'ワークアウト'}
-                              {post.post_type === 'progress' && '進歩報告'}
-                              {post.post_type === 'motivation' && 'モチベーション'}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-gray-700 mb-4 whitespace-pre-line">{post.content}</p>
-                        {post.tags && post.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mb-4">
-                            {post.tags.map((tag: string) => (
-                              <span key={tag} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                                #{tag}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        {post.location && (
-                          <p className="text-xs text-gray-500 mb-2">📍 {post.location}</p>
-                        )}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-4">
-                            {post.id ? (
-                              <LikeButton 
-                                postId={post.id}
-                                initialLikeCount={post.like_count || post.likes || 0}
-                                initialIsLiked={post.is_liked || false}
-                                size="sm"
-                              />
-                            ) : (
-                              <Button variant="ghost" size="sm" className="text-gray-600">
-                                <MessageSquare className="h-4 w-4 mr-1" />
-                                {post.like_count || post.likes || 0}
-                              </Button>
-                            )}
-                            <Button variant="ghost" size="sm" className="text-gray-600">
-                              <MessageSquare className="h-4 w-4 mr-1" />
-                              {post.comment_count || post.comments || 0}
-                            </Button>
-                            <Button variant="ghost" size="sm" className="text-gray-600">
-                              <Share2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                          <Button variant="ghost" size="sm" className="text-gray-600">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                <PostCard key={post.id} post={post} />
               )) : (
                 <Card>
                   <CardContent className="p-6 text-center">
