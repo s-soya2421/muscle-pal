@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { createClient as createBrowserClient } from "@/lib/supabase/client";
 import { createPost } from "@/app/actions/posts";
+import { validateImages, IMAGE_CONFIG } from "@/lib/image-upload-client";
 
 export function CreatePostForm() {
   const supabase = createBrowserClient();
@@ -30,16 +31,25 @@ export function CreatePostForm() {
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    const validFiles = files.slice(0, 4); // 最大4枚まで
+    
+    // バリデーション実行
+    const validationError = validateImages(files);
+    if (validationError) {
+      setError(validationError.message);
+      // ファイル選択をリセット
+      e.target.value = '';
+      return;
+    }
 
-    setSelectedImages(validFiles);
+    setError(null);
+    setSelectedImages(files);
 
     // プレビュー用のURLを生成
-    const previews = validFiles.map(file => URL.createObjectURL(file));
-    setImagePreviews(previews);
-
+    const previews = files.map(file => URL.createObjectURL(file));
+    
     // 古いURLをクリーンアップ
     imagePreviews.forEach(url => URL.revokeObjectURL(url));
+    setImagePreviews(previews);
   };
 
   const removeImage = (index: number) => {
@@ -110,12 +120,12 @@ export function CreatePostForm() {
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            画像を選択 (最大4枚)
+            {`画像を選択 (最大${IMAGE_CONFIG.MAX_COUNT}枚、${IMAGE_CONFIG.MAX_SIZE / (1024 * 1024)}MB以下)`}
           </label>
           <input
             id="image-upload"
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/jpg,image/png,image/webp"
             multiple
             onChange={handleImageSelect}
             className="hidden"

@@ -2,15 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { uploadPostImages } from "@/lib/post-images-server";
 
-interface CreatePostData {
+export interface CreatePostData {
   content: string;
   privacy: "public" | "followers" | "private";
   post_type: "workout" | "progress" | "motivation" | "general";
   tags?: string[];
   location?: string;
   workout_data?: Record<string, unknown>;
-  images?: Array<{ url: string; alt?: string }>;
+  // Note: images are now managed through post_images table
 }
 
 export async function createPost(data: CreatePostData | FormData) {
@@ -19,16 +20,24 @@ export async function createPost(data: CreatePostData | FormData) {
   let post_type: "workout" | "progress" | "motivation" | "general";
   let tags: string[] = [];
   let location: string | undefined;
-  let workout_data: Record<string, unknown>;
-  let images: Array<{ url: string; alt?: string }> = [];
+  let workout_data: Record<string, unknown> = {};
+  const imageFiles: File[] = [];
 
   // FormData か通常のオブジェクトかを判定
   if (data instanceof FormData) {
     content = String(data.get("content") || "").trim();
     privacy = String(data.get("privacy") || "public") as "public" | "followers" | "private";
     post_type = "general"; // FormDataの場合はデフォルト
+    
+    // FormDataから画像ファイルを収集
+    for (let i = 0; i < 4; i++) {
+      const file = data.get(`image_${i}`) as File;
+      if (file && file.size > 0) {
+        imageFiles.push(file);
+      }
+    }
   } else {
-    ({ content, privacy, post_type, tags = [], location, workout_data, images = [] } = data);
+    ({ content, privacy, post_type, tags = [], location, workout_data = {} } = data);
   }
 
   if (!content?.trim()) {
@@ -54,6 +63,7 @@ export async function createPost(data: CreatePostData | FormData) {
     throw new Error("ログインが必要です");
   }
 
+
   const { data: postData, error } = await supabase
     .from("posts")
     .insert({
@@ -64,7 +74,6 @@ export async function createPost(data: CreatePostData | FormData) {
       tags,
       location: location || null,
       workout_data: workout_data || {},
-      images: images.length > 0 ? images : null,
     })
     .select()
     .single();
@@ -72,6 +81,18 @@ export async function createPost(data: CreatePostData | FormData) {
   if (error) {
     console.error("投稿エラー:", error);
     throw new Error("投稿に失敗しました");
+  }
+
+  // 投稿作成後、画像をアップロード
+  if (imageFiles.length > 0) {
+    try {
+      await uploadPostImages(imageFiles, postData.id, user.id);
+    } catch (uploadError) {
+      console.error('画像アップロードエラー:', uploadError);
+      // 投稿は作成されたが画像アップロードに失敗した場合の処理
+      // エラーをスローするか、警告として扱うかは要件次第
+      throw new Error(`投稿は作成されましたが、画像のアップロードに失敗しました: ${uploadError}`);
+    }
   }
 
   revalidatePath("/posts");
@@ -168,6 +189,12 @@ export async function getPosts(options?: {
         display_name,
         avatar_url,
         fitness_level
+      ),
+      post_images (
+        id,
+        storage_path,
+        display_order,
+        alt_text
       )
     `)
     .is("deleted_at", null)
@@ -257,6 +284,12 @@ export async function getPostById(postId: string) {
         display_name,
         avatar_url,
         fitness_level
+      ),
+      post_images (
+        id,
+        storage_path,
+        display_order,
+        alt_text
       )
     `)
     .eq("id", postId)

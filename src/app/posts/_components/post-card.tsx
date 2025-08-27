@@ -9,6 +9,7 @@ import Link from "next/link";
 import type { Post } from "../page";
 import { MockPost } from "@/lib/mock-data";
 import { PostImageGallery } from "./post-image-gallery";
+import { getPostImageUrls } from "@/lib/image-utils";
 
 interface PostCardProps {
   post: Post | MockPost;
@@ -94,25 +95,25 @@ export function PostCard({ post }: PostCardProps) {
         )}
 
         {/* 場所表示 */}
-        {((isPost && (post as Post).location) || (!isPost && (post as MockPost).location)) && (
-          <p className="text-sm text-gray-500 mt-2">📍 {isPost ? (post as Post).location : (post as MockPost).location}</p>
+        {isPost && (post as Post).location && (
+          <p className="text-sm text-gray-500 mt-2">📍 {String((post as Post).location)}</p>
+        )}
+        {!isPost && (post as MockPost).location && (
+          <p className="text-sm text-gray-500 mt-2">📍 {String((post as MockPost).location)}</p>
         )}
 
         {/* 画像表示 */}
-        {!isPost && (() => {
-          const mockPost = post as MockPost;
-          return mockPost.images && mockPost.images.length > 0 && (
-            <div className="mt-3">
-              <PostImageGallery images={mockPost.images} />
-            </div>
-          );
-        })()}
+        {getPostImageUrls(post).length > 0 && (
+          <div className="mt-3">
+            <PostImageGallery images={getPostImageUrls(post)} />
+          </div>
+        )}
 
         {/* ワークアウトデータ表示 */}
-        {isPost && (post as Post).post_type === 'workout' && (post as Post).workout_data?.exercises && (post as Post).workout_data.exercises.length > 0 && (
+        {isPost && (post as Post).post_type === 'workout' && (post as Post).workout_data?.exercises && Array.isArray((post as Post).workout_data!.exercises) && (post as Post).workout_data!.exercises.length > 0 && (
           <div className="bg-gray-50 rounded-lg p-3 space-y-2">
             <h4 className="text-sm font-medium text-gray-700">ワークアウト詳細</h4>
-            {(post as Post).workout_data.exercises.slice(0, 3).map((exercise: any, index: number) => (
+            {((post as Post).workout_data!.exercises as any[]).slice(0, 3).map((exercise: any, index: number) => (
               <div key={index} className="text-xs text-gray-600">
                 <span className="font-medium">{exercise.name}</span>
                 {exercise.sets && exercise.reps && (
@@ -123,8 +124,8 @@ export function PostCard({ post }: PostCardProps) {
                 )}
               </div>
             ))}
-            {(post as Post).workout_data.exercises.length > 3 && (
-              <p className="text-xs text-gray-500">+{(post as Post).workout_data.exercises.length - 3}件の種目</p>
+            {((post as Post).workout_data!.exercises as any[]).length > 3 && (
+              <p className="text-xs text-gray-500">+{((post as Post).workout_data!.exercises as any[]).length - 3}件の種目</p>
             )}
           </div>
         )}

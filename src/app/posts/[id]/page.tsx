@@ -11,6 +11,7 @@ import { PostImageGallery } from '../_components/post-image-gallery';
 import { ReplySection } from '../_components/reply-section';
 import { LikeButton } from '@/components/posts/like-button';
 import { MainLayout } from '@/components/layout/main-layout';
+import { getPostImageUrls } from '@/lib/image-utils';
 
 interface PostDetailPageProps {
   params: Promise<{
@@ -143,9 +144,9 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
             </div>
 
             {/* Images */}
-            {post.media_urls && post.media_urls.length > 0 && (
+            {getPostImageUrls(post).length > 0 && (
               <div className="mt-3">
-                <PostImageGallery images={post.media_urls} />
+                <PostImageGallery images={getPostImageUrls(post)} />
               </div>
             )}
 
