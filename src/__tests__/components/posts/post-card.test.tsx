@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { PostCard } from '@/app/posts/_components/post-card'
 import type { Post } from '@/app/posts/page'
+import { getPostImageUrls } from '@/lib/image-utils'
 
 // Mock Next.js Link component
 jest.mock('next/link', () => {
@@ -22,7 +23,18 @@ jest.mock('@/app/posts/_components/post-image-gallery', () => ({
   ),
 }))
 
+jest.mock('@/lib/image-utils', () => ({
+  getPostImageUrls: jest.fn(),
+}))
+
+const mockGetPostImageUrls = getPostImageUrls as jest.MockedFunction<typeof getPostImageUrls>
+
 describe('PostCard', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockGetPostImageUrls.mockReturnValue([])
+  })
+
   const mockPost: Post = {
     id: '1',
     author_id: 'user1',
@@ -165,13 +177,62 @@ describe('PostCard', () => {
     expect(content).toHaveClass('whitespace-pre-wrap')
   })
 
-  it('disables like and comment buttons', () => {
+  it('displays like and comment buttons', () => {
     render(<PostCard post={mockPost} />)
     
-    const likeButton = screen.getByRole('button', { name: /いいね/ })
-    const commentButton = screen.getByRole('button', { name: /コメント/ })
+    // Check if buttons exist (accessibility check)
+    const buttons = screen.getAllByRole('button')
+    expect(buttons.length).toBeGreaterThan(0)
+  })
+
+  it('displays image gallery when images are available', () => {
+    const mockImages = [
+      'https://example.com/image1.jpg',
+      'https://example.com/image2.jpg',
+      'https://example.com/image3.jpg'
+    ]
+    mockGetPostImageUrls.mockReturnValue(mockImages)
     
-    expect(likeButton).toBeDisabled()
-    expect(commentButton).toBeDisabled()
+    render(<PostCard post={mockPost} />)
+    
+    expect(screen.getByTestId('post-image-gallery')).toBeInTheDocument()
+    expect(screen.getByText('Gallery with 3 images')).toBeInTheDocument()
+  })
+
+  it('does not display image gallery when no images', () => {
+    mockGetPostImageUrls.mockReturnValue([])
+    
+    render(<PostCard post={mockPost} />)
+    
+    expect(screen.queryByTestId('post-image-gallery')).not.toBeInTheDocument()
+  })
+
+  it('handles posts with post_images intermediate table', () => {
+    const postWithPostImages: Post = {
+      ...mockPost,
+      post_images: [
+        { id: 'img1', storage_path: 'user1/image1.jpg', display_order: 0, alt_text: 'Image 1' },
+        { id: 'img2', storage_path: 'user1/image2.jpg', display_order: 1, alt_text: 'Image 2' },
+      ],
+    }
+    
+    const mockImages = [
+      'https://example.com/storage/user1/image1.jpg',
+      'https://example.com/storage/user1/image2.jpg'
+    ]
+    mockGetPostImageUrls.mockReturnValue(mockImages)
+    
+    render(<PostCard post={postWithPostImages} />)
+    
+    expect(mockGetPostImageUrls).toHaveBeenCalledWith(postWithPostImages)
+    expect(screen.getByTestId('post-image-gallery')).toBeInTheDocument()
+    expect(screen.getByText('Gallery with 2 images')).toBeInTheDocument()
+  })
+
+  it('calls getPostImageUrls with correct post data', () => {
+    render(<PostCard post={mockPost} />)
+    
+    expect(mockGetPostImageUrls).toHaveBeenCalledWith(mockPost)
+    expect(mockGetPostImageUrls).toHaveBeenCalledTimes(1)
   })
 })

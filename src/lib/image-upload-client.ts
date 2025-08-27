@@ -54,12 +54,11 @@ export function getImageUrl(storagePath: string): string {
       .from(IMAGE_CONFIG.BUCKET_NAME)
       .getPublicUrl(storagePath);
     
-    console.log('Generated image URL:', { storagePath, publicUrl: data.publicUrl });
     return data.publicUrl;
   } catch (error) {
-    console.error('画像URL生成エラー:', error, { storagePath });
+    console.error('画像URL生成エラー:', error);
     // プレースホルダー画像を返す
-    return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik02MCA3MEg4MFY5MEg2MFY3MFpNMTAwIDcwSDEyMFY5MEgxMDBWNzBaTTEwMCAxMTBIMTIwVjEzMEgxMDBWMTEwWk02MCA5MEg4MFYxMTBINjBWOTBaTTgwIDEzMEgxNDBWMTUwSDgwVjEzMFoiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+';
+    return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ci8+CjxwYXRoIGQ9Ik02MCA3MEg4MFY5MEg2MFY3MFpNMTAwIDcwSDEyMFY5MEgxMDBWNzBaTTEwMCAxMTBIMTIwVjEzMEgxMDBWMTEwWk02MCA5MEg4MFYxMTBINjBWOTBaTTgwIDEzMEgxNDBWMTUwSDgwVjEzMFoiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+';
   }
 }
 

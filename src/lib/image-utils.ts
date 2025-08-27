@@ -43,8 +43,12 @@ export function processLegacyImages(images: any): string[] {
  * 投稿データの画像を処理して統一されたURL配列を返す
  */
 export function getPostImageUrls(post: any): string[] {
+  if (!post) {
+    return [];
+  }
+  
   // 中間テーブルのpost_imagesフィールドを優先
-  if (post.post_images && Array.isArray(post.post_images)) {
+  if (post.post_images && Array.isArray(post.post_images) && post.post_images.length > 0) {
     return post.post_images
       .sort((a: PostImage, b: PostImage) => a.display_order - b.display_order)
       .map((img: PostImage) => getImageUrl(img.storage_path));
@@ -55,14 +59,17 @@ export function getPostImageUrls(post: any): string[] {
     return convertImagePathsToUrls(post.image_paths);
   }
   
-  // 旧imagesフィールドをフォールバック
+  // imagesフィールドの処理
   if (post.images) {
+    // モックデータ用の文字列配列（フルURL）をチェック
+    if (Array.isArray(post.images) && post.images.length > 0 && typeof post.images[0] === 'string') {
+      // フルURLかどうかを判定
+      if (post.images[0].startsWith('http')) {
+        return post.images; // フルURLなのでそのまま返す
+      }
+    }
+    // レガシー形式として処理
     return processLegacyImages(post.images);
-  }
-  
-  // モックデータ用のimagesフィールド
-  if (post.images && Array.isArray(post.images) && typeof post.images[0] === 'string') {
-    return post.images;
   }
   
   return [];

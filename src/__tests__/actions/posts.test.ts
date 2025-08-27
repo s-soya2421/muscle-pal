@@ -4,13 +4,16 @@
 import { createPost, getPosts, getPostById, getPostComments, createComment } from '@/app/actions/posts'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { uploadPostImages } from '@/lib/post-images-server'
 
 // Mocks
 jest.mock('@/lib/supabase/server')
 jest.mock('next/cache')
+jest.mock('@/lib/post-images-server')
 
 const mockCreateServerClient = createServerClient as jest.MockedFunction<typeof createServerClient>
 const mockRevalidatePath = revalidatePath as jest.MockedFunction<typeof revalidatePath>
+const mockUploadPostImages = uploadPostImages as jest.MockedFunction<typeof uploadPostImages>
 
 // Mock Supabase client methods
 const mockInsert = jest.fn()
@@ -27,6 +30,16 @@ describe('createPost', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     
+    mockSingle.mockResolvedValue({
+      data: null,
+      error: null,
+    })
+    mockSelect.mockReturnValue({
+      single: mockSingle,
+    })
+    mockInsert.mockReturnValue({
+      select: mockSelect,
+    })
     mockFrom.mockReturnValue({
       insert: mockInsert,
     })
@@ -39,22 +52,33 @@ describe('createPost', () => {
     })
   })
 
-  const createFormData = (content: string, privacy: string = 'public') => {
+  const createFormData = (content: string, privacy: string = 'public', images: File[] = []) => {
     const formData = new FormData()
     formData.append('content', content)
     formData.append('privacy', privacy)
+    images.forEach((image, index) => {
+      formData.append(`image_${index}`, image)
+    })
     return formData
+  }
+
+  const createMockImage = (name: string = 'test.jpg', size: number = 1000): File => {
+    return new File(['test'], name, { type: 'image/jpeg', lastModified: Date.now() })
   }
 
   it('successfully creates a post with valid data', async () => {
     const mockUser = { id: 'user123' }
+    const mockPostData = { id: 'post123' }
     mockGetUser.mockResolvedValueOnce({
       data: { user: mockUser },
       error: null,
     })
-    mockInsert.mockResolvedValueOnce({
-      data: null,
+    mockSelect.mockResolvedValueOnce({
+      data: mockPostData,
       error: null,
+    })
+    mockInsert.mockReturnValue({
+      select: mockSelect
     })
 
     const formData = createFormData('テスト投稿です', 'public')
@@ -72,6 +96,81 @@ describe('createPost', () => {
     })
     expect(mockRevalidatePath).toHaveBeenCalledWith('/posts')
     expect(mockRevalidatePath).toHaveBeenCalledWith('/dashboard')
+  })
+
+  it('successfully creates a post with images', async () => {
+    const mockUser = { id: 'user123' }
+    const mockPostData = { id: 'post123' }
+    const mockImages = [createMockImage('test1.jpg'), createMockImage('test2.jpg')]
+    
+    mockGetUser.mockResolvedValueOnce({
+      data: { user: mockUser },
+      error: null,
+    })
+    mockSelect.mockResolvedValueOnce({
+      data: mockPostData,
+      error: null,
+    })
+    mockInsert.mockReturnValue({
+      select: mockSelect
+    })
+    mockUploadPostImages.mockResolvedValueOnce([
+      { id: 'img1', storage_path: 'path1', url: 'url1', display_order: 0 },
+      { id: 'img2', storage_path: 'path2', url: 'url2', display_order: 1 }
+    ])
+
+    const formData = createFormData('テスト投稿です', 'public', mockImages)
+    
+    await createPost(formData)
+    
+    expect(mockUploadPostImages).toHaveBeenCalledWith(mockImages, 'post123', 'user123')
+  })
+
+  it('handles image upload errors gracefully', async () => {
+    const mockUser = { id: 'user123' }
+    const mockPostData = { id: 'post123' }
+    const mockImages = [createMockImage('test.jpg')]
+    
+    mockGetUser.mockResolvedValueOnce({
+      data: { user: mockUser },
+      error: null,
+    })
+    mockSelect.mockResolvedValueOnce({
+      data: mockPostData,
+      error: null,
+    })
+    mockInsert.mockReturnValue({
+      select: mockSelect
+    })
+    mockUploadPostImages.mockRejectedValueOnce(new Error('アップロードエラー'))
+
+    const formData = createFormData('テスト投稿です', 'public', mockImages)
+    
+    await expect(createPost(formData)).rejects.toThrow('投稿は作成されましたが、画像のアップロードに失敗しました')
+    expect(mockUploadPostImages).toHaveBeenCalledWith(mockImages, 'post123', 'user123')
+  })
+
+  it('skips image upload when no images provided', async () => {
+    const mockUser = { id: 'user123' }
+    const mockPostData = { id: 'post123' }
+    
+    mockGetUser.mockResolvedValueOnce({
+      data: { user: mockUser },
+      error: null,
+    })
+    mockSelect.mockResolvedValueOnce({
+      data: mockPostData,
+      error: null,
+    })
+    mockInsert.mockReturnValue({
+      select: mockSelect
+    })
+
+    const formData = createFormData('テスト投稿です', 'public')
+    
+    await createPost(formData)
+    
+    expect(mockUploadPostImages).not.toHaveBeenCalled()
   })
 
   it('throws error when content is empty', async () => {
