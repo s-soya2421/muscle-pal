@@ -127,6 +127,7 @@ npx supabase stop
 - **Supabase Studio**: http://localhost:54323
 - **Inbucket (Email)**: http://localhost:54324
 - **PostgreSQL**: localhost:54322
+ - **Postgres Meta (pg-meta)**: http://localhost:8080（内部管理API／通常はKong配下の`/pg/`経由）
 
 ### Supabase CLI環境の場合：
 - **Supabase Studio**: http://127.0.0.1:54323
@@ -150,6 +151,7 @@ npx supabase stop
 | PostgreSQL | 54322 | データベース |
 | Supabase Studio | 54323 | 管理画面 |
 | Inbucket | 54324 | メール確認 |
+| Postgres Meta | 8080 | Studio用メタデータ/SQL API（内部） |
 
 ### Supabase CLI環境のポート：
 
@@ -189,6 +191,26 @@ npx supabase db reset
 
 # 2. 手動でマイグレーション確認
 npx supabase db diff
+```
+
+### Studio が DB に接続できない（pg-meta 関連）
+```
+# 例: meta ログに ECONNREFUSED 127.0.0.1:5432
+# 原因: pg-meta の接続先が localhost になっている
+# 対処: docker-compose.yml の meta サービスで
+#       PG_META_DB_HOST=db, PG_META_DB_PORT=5432 など
+#       コンテナ名で接続するように設定し直す
+
+# 再起動
+docker compose up -d --build meta studio kong
+```
+
+### PostgREST が `_supabase` スキーマを見つけられない
+```
+# 例: rest ログに "schema \"_supabase\" does not exist"
+# 対処: docker-compose.yml の rest -> PGRST_DB_SCHEMAS から
+#       `_supabase` を削除して再起動
+docker compose up -d --build rest
 ```
 
 ## 🚀 自動マイグレーション機能
