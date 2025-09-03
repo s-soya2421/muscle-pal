@@ -75,6 +75,11 @@ services:
       file: docker-compose.yml
       service: studio
 
+  meta:
+    extends:
+      file: docker-compose.yml
+      service: meta
+
 volumes:
   db_data:
     driver: local

@@ -75,7 +75,7 @@ services:
       - db
     environment:
       PGRST_DB_URI: postgres://authenticator:your-super-secret-and-long-postgres-password@db:5432/postgres
-      PGRST_DB_SCHEMAS: public
+      PGRST_DB_SCHEMAS: public,storage,auth
       PGRST_DB_ANON_ROLE: anon
       PGRST_JWT_SECRET: your-super-secret-jwt-token-with-at-least-32-characters-long
       PGRST_DB_USE_LEGACY_GUCS: "false"
@@ -111,6 +111,25 @@ services:
       DNS_NODES: "''"
     ports:
       - "4000:4000"
+    networks:
+      - muscle-pal-network
+
+  # Postgres Meta (required for Studio)
+  meta:
+    image: supabase/postgres-meta:v0.80.0
+    container_name: muscle-pal-meta
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      PG_META_PORT: 8080
+      PG_META_DB_HOST: db
+      PG_META_DB_PORT: 5432
+      PG_META_DB_NAME: postgres
+      PG_META_DB_USER: postgres
+      PG_META_DB_PASSWORD: your-super-secret-and-long-postgres-password
+    ports:
+      - "8080:8080"
     networks:
       - muscle-pal-network
 
@@ -196,24 +215,6 @@ services:
     networks:
       - muscle-pal-network
 
-  # Supabase Studio (Admin UI) - Alternative approach using pgAdmin
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: muscle-pal-pgadmin
-    restart: unless-stopped
-    depends_on:
-      - db
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@muscle-pal.com
-      PGADMIN_DEFAULT_PASSWORD: admin123
-      PGADMIN_LISTEN_PORT: 80
-    ports:
-      - "54326:80"
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-    networks:
-      - muscle-pal-network
-
   # Supabase Studio (Admin UI) - Main database management interface  
   studio:
     image: supabase/studio:20240326-5e5586d
@@ -224,18 +225,28 @@ services:
       - rest
       - kong
     environment:
+      # Supabase URLs - Qiita記事参考
       SUPABASE_URL: http://kong:8000
-      STUDIO_PG_META_URL: http://rest:3000
+      SUPABASE_PUBLIC_URL: http://localhost:8000
+      # Authentication keys
       SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
       SUPABASE_SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
-      POSTGRES_PASSWORD: your-super-secret-and-long-postgres-password
+      # JWT secrets - 重要
+      AUTH_JWT_SECRET: your-super-secret-jwt-token-with-at-least-32-characters-long
+      JWT_SECRET: your-super-secret-jwt-token-with-at-least-32-characters-long
+      # Database connection - 直接接続とPostgREST経由の両方
       DATABASE_URL: postgresql://postgres:your-super-secret-and-long-postgres-password@db:5432/postgres
-      # Studio specific settings to fix JSON issues
-      NEXT_TELEMETRY_DISABLED: 1
-      NODE_ENV: development
+      POSTGRES_PASSWORD: your-super-secret-and-long-postgres-password
+      # Meta API connection - 重要な設定
+      STUDIO_PG_META_URL: http://meta:8080
       STUDIO_LOAD_BALANCER_URL: http://kong:8000
+      PGRST_JWT_SECRET: your-super-secret-jwt-token-with-at-least-32-characters-long
+      # Project configuration
       DEFAULT_ORGANIZATION: muscle-pal
       DEFAULT_PROJECT: default
+      # Development settings
+      NEXT_TELEMETRY_DISABLED: 1
+      NODE_ENV: development
       STUDIO_PORT: 3000
     ports:
       - "54323:3000"
@@ -294,8 +305,6 @@ volumes:
   db_data:
     driver: local
   storage_data:
-    driver: local
-  pgadmin_data:
     driver: local
 
 networks:
