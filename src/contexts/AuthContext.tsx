@@ -69,17 +69,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setState(prev => ({ ...prev, loading: true, error: null }));
       
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log('🔐 Starting login attempt for:', email);
+      console.log('🌐 Supabase URL:', supabase.supabaseUrl);
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
 
+      console.log('📡 Login response:', { data, error });
+
       if (error) {
+        console.error('❌ Login error:', error);
         const japaneseError = handleAuthError(error, 'login');
         setState(prev => ({ ...prev, error: japaneseError, loading: false }));
         throw new Error(japaneseError);
       }
+
+      console.log('✅ Login successful!', data);
     } catch (error) {
+      console.error('💥 Catch block error:', error);
       const japaneseError = handleAuthError(error, 'login');
       setState(prev => ({ ...prev, error: japaneseError, loading: false }));
       throw new Error(japaneseError);

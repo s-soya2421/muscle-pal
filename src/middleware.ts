@@ -8,8 +8,9 @@ export async function middleware(request: NextRequest) {
     },
   })
 
+  // Use server-side URL in Docker to avoid localhost resolution issues
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL)!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {

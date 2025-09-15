@@ -23,9 +23,18 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
+      console.log('🔐 Starting login process...')
       await signIn(email, password)
-      router.push('/dashboard')
+      console.log('✅ Login successful, preparing to navigate...')
+      
+      // 認証状態の同期を待つため少し待機
+      setTimeout(() => {
+        console.log('🚀 Navigating to dashboard...')
+        router.push('/dashboard')
+      }, 100)
+      
     } catch (error) {
+      console.error('❌ Login failed:', error)
       setError(handleAuthError(error, 'login page'))
     } finally {
       setLoading(false)
