@@ -9,7 +9,10 @@
       "mcp__serena__replace_symbol_body",
       "mcp__serena__search_for_pattern",
       "Bash(npm test:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(npx supabase:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": []
   }

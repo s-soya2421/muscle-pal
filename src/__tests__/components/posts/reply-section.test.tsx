@@ -31,11 +31,11 @@ jest.mock('@/components/ui/avatar', () => ({
 }))
 
 jest.mock('@/components/ui/textarea', () => ({
-  Textarea: (props: any) => <textarea {...props} data-testid="textarea" />,
+  Textarea: (props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => <textarea {...props} data-testid="textarea" />,
 }))
 
 jest.mock('@/components/ui/button', () => ({
-  Button: ({ children, ...props }: any) => <button {...props} data-testid="button">{children}</button>,
+  Button: ({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { children?: React.ReactNode }) => <button {...props} data-testid="button">{children}</button>,
 }))
 
 jest.mock('@/components/posts/like-button', () => ({

@@ -15,7 +15,7 @@ jest.mock('@/components/layout/sidebar', () => ({
       <h2>MusclePal</h2>
       <nav>
         <a href="/dashboard">ホーム</a>
-        <a href="/posts">投稿</a>
+        <span data-testid="mock-posts-link">投稿</span>
         <a href="/profile">プロフィール</a>
       </nav>
     </div>

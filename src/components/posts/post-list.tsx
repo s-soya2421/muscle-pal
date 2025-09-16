@@ -1,5 +1,5 @@
 import { PostCard } from "./post-card";
-import type { Post } from "./types";
+import type { Post } from "@/types/supabase";
 
 export function PostList({ posts }: { posts: Post[] }) {
   if (!posts?.length) return null;

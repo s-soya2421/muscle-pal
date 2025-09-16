@@ -1,14 +1,14 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { type Post } from "./types";
+import type { Post } from "@/types/supabase";
 
 export function PostCard({ post, className }: { post: Post; className?: string }) {
   return (
     <Card className={cn("rounded-2xl", className)}>
       <CardHeader>
-        <CardTitle className="line-clamp-1">{post.title}</CardTitle>
-        {post.author ? <CardDescription>by {post.author}</CardDescription> : null}
+        <CardTitle className="line-clamp-1">{post.content.slice(0, 50)}...</CardTitle>
+        <CardDescription>投稿 ID: {post.id}</CardDescription>
       </CardHeader>
       <CardContent>
         <p className="whitespace-pre-wrap break-words text-sm leading-6 text-muted-foreground">

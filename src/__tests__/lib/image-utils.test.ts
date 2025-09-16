@@ -34,7 +34,7 @@ describe('convertImagePathsToUrls', () => {
   })
 
   it('returns empty array for non-array input', () => {
-    const result = convertImagePathsToUrls('not-an-array' as any)
+    const result = convertImagePathsToUrls('not-an-array' as unknown as string[])
     expect(result).toEqual([])
     expect(mockGetImageUrl).not.toHaveBeenCalled()
   })

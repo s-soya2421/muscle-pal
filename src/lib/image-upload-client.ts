@@ -32,7 +32,7 @@ export function validateImages(files: File[]): ImageUploadError | null {
       };
     }
 
-    if (!IMAGE_CONFIG.ALLOWED_TYPES.includes(file.type as any)) {
+    if (!IMAGE_CONFIG.ALLOWED_TYPES.includes(file.type as typeof IMAGE_CONFIG.ALLOWED_TYPES[number])) {
       return {
         type: 'type',
         message: 'JPEG, PNG, WebP形式の画像のみアップロードできます',

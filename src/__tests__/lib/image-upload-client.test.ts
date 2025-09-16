@@ -127,7 +127,7 @@ describe('getImageUrl', () => {
     
     mockCreateClient.mockReturnValue({
       storage: mockStorage,
-    } as any)
+    } as ReturnType<typeof createClient>)
   })
 
   it('generates correct public URL using Supabase client', () => {
