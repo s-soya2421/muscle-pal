@@ -8,31 +8,7 @@ import { CreatePostForm } from "./_components/create-post-form";
 import { MainLayout } from "@/components/layout/main-layout";
 
 // --- Types ---
-type Profile = {
-  username: string | null;
-  display_name: string | null;
-  avatar_url: string | null;
-  fitness_level: string | null;
-};
-
-export type Post = {
-  id: string;
-  author_id: string;
-  content: string;
-  post_type: string;
-  privacy: string;
-  tags: string[];
-  location: string | null;
-  workout_data: Record<string, any> | null;
-  like_count: number;
-  comment_count: number;
-  created_at: string;
-  is_liked?: boolean;
-  images?: Array<{ url: string; alt?: string }>; // レガシー形式
-  image_paths?: string[]; // 新しいストレージパス形式
-  media_urls?: string[]; // 後方互換性のため
-  profiles?: Profile;
-};
+import type { Post, Profile } from "@/types/supabase";
 
 // --- Data fetch on the server ---
 async function getPostsData(): Promise<Post[]> {

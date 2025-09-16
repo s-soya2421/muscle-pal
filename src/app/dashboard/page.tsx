@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
+import type { Post } from '@/types/supabase';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -112,7 +113,7 @@ async function DashboardContent({ userId }: { userId: string }) {
 
   // 実際のデータを取得
   let userProfile = null;
-  let timelinePosts: any[] = [];
+  let timelinePosts: Post[] = [];
   
   try {
     // ユーザープロフィールを取得
@@ -124,7 +125,7 @@ async function DashboardContent({ userId }: { userId: string }) {
     // エラー時はモックデータを使用
     const { getCurrentUser, mockTimelinePosts } = await import('@/lib/mock-data');
     userProfile = getCurrentUser();
-    timelinePosts = mockTimelinePosts;
+    timelinePosts = mockTimelinePosts as unknown as Post[];
   }
 
   // 現在はモックデータを使用（後で実データに置き換え）

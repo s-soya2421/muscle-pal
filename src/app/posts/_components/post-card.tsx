@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LikeButton } from "@/components/posts/like-button";
 import { MessageSquare } from "lucide-react";
 import Link from "next/link";
-import type { Post } from "../page";
+import type { Post } from "@/types/supabase";
 import { MockPost } from "@/lib/mock-data";
 import { PostImageGallery } from "./post-image-gallery";
 import { getPostImageUrls } from "@/lib/image-utils";
@@ -27,7 +27,7 @@ export function PostCard({ post }: PostCardProps) {
   }) : (post as MockPost).timestamp;
 
   const displayName = isPost 
-    ? (post as Post).profiles?.display_name || (post as Post).profiles?.username || 'ユーザー'
+    ? 'ユーザー'  // TODO: プロフィール情報を取得
     : (post as MockPost).author;
   const initials = displayName
     .split(" ")
@@ -49,7 +49,7 @@ export function PostCard({ post }: PostCardProps) {
     <div className="flex gap-3">
       <Link href={`/posts/${post.id}`} className="flex-shrink-0">
         <Avatar>
-          {isPost && (post as Post).profiles?.avatar_url && <AvatarImage src={(post as Post).profiles?.avatar_url || ''} />}
+          {/* TODO: プロフィール画像を取得 */}
           {!isPost && (post as MockPost).authorAvatar && <AvatarImage src={(post as MockPost).authorAvatar || ''} />}
           <AvatarFallback>{initials}</AvatarFallback>
         </Avatar>
@@ -65,7 +65,7 @@ export function PostCard({ post }: PostCardProps) {
             <>
               <span className="text-gray-500">·</span>
               <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                {getPostTypeLabel((post as Post).post_type)}
+                {getPostTypeLabel((post as Post).post_type || 'general')}
               </span>
             </>
           )}
@@ -84,9 +84,9 @@ export function PostCard({ post }: PostCardProps) {
         </Link>
         
         {/* タグ表示 */}
-        {isPost && (post as Post).tags && (post as Post).tags.length > 0 && (
+        {isPost && (post as Post).tags && (post as Post).tags!.length > 0 && (
           <div className="flex flex-wrap gap-1">
-            {(post as Post).tags.map((tag) => (
+            {(post as Post).tags!.map((tag) => (
               <span key={tag} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
                 #{tag}
               </span>
@@ -109,8 +109,8 @@ export function PostCard({ post }: PostCardProps) {
           </div>
         )}
 
-        {/* ワークアウトデータ表示 */}
-        {isPost && (post as Post).post_type === 'workout' && (post as Post).workout_data?.exercises && Array.isArray((post as Post).workout_data!.exercises) && (post as Post).workout_data!.exercises.length > 0 && (
+        {/* TODO: ワークアウトデータ表示 */}
+        {/* {false && isPost && (post as Post).post_type === 'workout' && (
           <div className="bg-gray-50 rounded-lg p-3 space-y-2">
             <h4 className="text-sm font-medium text-gray-700">ワークアウト詳細</h4>
             {((post as Post).workout_data!.exercises as any[]).slice(0, 3).map((exercise: any, index: number) => (
@@ -128,14 +128,14 @@ export function PostCard({ post }: PostCardProps) {
               <p className="text-xs text-gray-500">+{((post as Post).workout_data!.exercises as any[]).length - 3}件の種目</p>
             )}
           </div>
-        )}
+        )} */}
 
         <div className="flex items-center gap-12 mt-3 text-gray-500">
           {isPost ? (
             <LikeButton 
               postId={post.id}
               initialLikeCount={(post as Post).like_count || 0}
-              initialIsLiked={(post as Post).is_liked || false}
+              initialIsLiked={false} // TODO: いいね状態を取得
               size="sm"
             />
           ) : (

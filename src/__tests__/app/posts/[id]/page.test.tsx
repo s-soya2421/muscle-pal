@@ -35,7 +35,7 @@ jest.mock('@/app/posts/_components/post-image-gallery', () => ({
 }))
 
 jest.mock('@/app/posts/_components/reply-section', () => ({
-  ReplySection: ({ postId, replies }: { postId: string; replies: any[] }) => (
+  ReplySection: ({ postId, replies }: { postId: string; replies: unknown[] }) => (
     <div data-testid="reply-section">Reply section for {postId} with {replies.length} replies</div>
   ),
 }))
