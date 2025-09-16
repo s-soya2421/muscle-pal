@@ -34,3 +34,26 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Supabase ローカル開発とCLIへの切り替え
+
+このプロジェクトでは、ローカル開発用に Docker ではなく Supabase CLI を採用しています。
+
+- 主な理由（正直な話）: ドキュメントをちゃんと読まずに Docker 側で遠回りしてしまい、「素直に CLI 使えばよかった…」と気づいたため（愚かだった、笑）。
+- 実利: CLI ならローカル起動、マイグレーション、シード投入、ストレージ操作まで一貫して扱え、チームでも再現性が高いです。
+
+よく使うコマンド（`package.json` のスクリプト経由）:
+
+```bash
+npm run supabase:start   # ローカルの Supabase を起動
+npm run supabase:reset   # DB を初期化（マイグレーション + シード）
+npm run supabase:status  # 稼働状況の確認
+npm run supabase:stop    # 停止
+```
+
+型の再生成（必要な場合）:
+
+```bash
+# ローカルのインスタンスから生成
+supabase gen types typescript --local > src/types/supabase.ts
+```
