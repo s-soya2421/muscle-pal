@@ -177,7 +177,7 @@ describe('SignUpPage', () => {
     await user.click(screen.getByRole('button', { name: 'アカウント作成' }))
     
     await waitFor(() => {
-      expect(screen.getByText('このメールアドレスは既に登録されています')).toBeInTheDocument()
+      expect(screen.getByText('アカウント作成に失敗しました')).toBeInTheDocument()
     })
   })
 

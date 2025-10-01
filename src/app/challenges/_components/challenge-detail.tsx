@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import * as React from 'react';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import type { MockChallenge } from '@/lib/mock-data';
+import { joinChallenge, pauseChallenge, resumeChallenge, leaveChallenge } from '@/app/actions/challenges';
+import { useRouter } from 'next/navigation';
 import { 
   Trophy, 
   Users, 
@@ -18,13 +20,27 @@ import {
   Clock
 } from 'lucide-react';
 
-interface ChallengeDetailProps {
-  challenge: MockChallenge;
+interface ChallengeParticipationState {
+  status: string;
+  currentDay: number;
 }
 
-export function ChallengeDetail({ challenge }: ChallengeDetailProps): React.JSX.Element {
-  const [isParticipating, setIsParticipating] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
+interface ChallengeDetailProps {
+  challenge: MockChallenge;
+  participation?: ChallengeParticipationState;
+}
+
+export function ChallengeDetail({ challenge, participation }: ChallengeDetailProps): React.JSX.Element {
+  const router = useRouter();
+  const [isParticipating, setIsParticipating] = useState<boolean>(Boolean(participation));
+  const [isPaused, setIsPaused] = useState<boolean>(participation?.status === 'paused');
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setIsParticipating(Boolean(participation));
+    setIsPaused(participation?.status === 'paused');
+  }, [participation]);
 
   const getDifficultyColor = (difficulty: string): string => {
     switch (difficulty) {
@@ -40,15 +56,62 @@ export function ChallengeDetail({ challenge }: ChallengeDetailProps): React.JSX.
   };
 
   const handleParticipation = (): void => {
-    setIsParticipating(!isParticipating);
+    if (isParticipating) return;
+    setError(null);
+    startTransition(async () => {
+      const res = await joinChallenge(challenge.id);
+      if (res.ok) {
+        setIsParticipating(true);
+        setIsPaused(false);
+        router.refresh();
+      } else {
+        setError(res.message ?? 'チャレンジに参加できませんでした。');
+      }
+    });
   };
 
   const handlePauseResume = (): void => {
-    setIsPaused(!isPaused);
+    if (!isParticipating) return;
+    setError(null);
+    startTransition(async () => {
+      if (isPaused) {
+        const res = await resumeChallenge(challenge.id);
+        if (res.ok) {
+          setIsPaused(false);
+          router.refresh();
+        } else {
+          setError('チャレンジを再開できませんでした。');
+        }
+      } else {
+        const res = await pauseChallenge(challenge.id);
+        if (res.ok) {
+          setIsPaused(true);
+          router.refresh();
+        } else {
+          setError('チャレンジを一時停止できませんでした。');
+        }
+      }
+    });
   };
 
-  const daysRemaining = challenge.duration - challenge.currentDay;
-  const progressPercentage = (challenge.currentDay / challenge.duration) * 100;
+  const handleLeave = (): void => {
+    if (!isParticipating) return;
+    setError(null);
+    startTransition(async () => {
+      const res = await leaveChallenge(challenge.id);
+      if (res.ok) {
+        setIsParticipating(false);
+        setIsPaused(false);
+        router.refresh();
+      } else {
+        setError('チャレンジから退出できませんでした。');
+      }
+    });
+  };
+
+  const participantCurrentDay = participation?.currentDay ?? challenge.currentDay;
+  const daysRemaining = challenge.duration - participantCurrentDay;
+  const progressPercentage = (participantCurrentDay / challenge.duration) * 100;
 
   return (
     <Card>
@@ -93,14 +156,14 @@ export function ChallengeDetail({ challenge }: ChallengeDetailProps): React.JSX.
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900">進捗状況</h3>
             <span className="text-sm text-gray-600">
-              {challenge.currentDay}/{challenge.duration}日目
+              {participantCurrentDay}/{challenge.duration}日目
             </span>
           </div>
           <Progress value={progressPercentage} className="h-3" />
           <div className="flex items-center justify-between text-sm">
             <span className="text-gray-600">{Math.round(progressPercentage)}% 完了</span>
             <span className="text-gray-600">
-              {challenge.currentDay >= challenge.duration ? '完了！' : `${daysRemaining}日残り`}
+              {participantCurrentDay >= challenge.duration ? '完了！' : `${daysRemaining}日残り`}
             </span>
           </div>
         </div>
@@ -150,6 +213,7 @@ export function ChallengeDetail({ challenge }: ChallengeDetailProps): React.JSX.
               onClick={handleParticipation} 
               className="flex-1"
               size="lg"
+              disabled={isPending}
             >
               <Play className="h-4 w-4 mr-2" />
               チャレンジに参加する
@@ -160,6 +224,7 @@ export function ChallengeDetail({ challenge }: ChallengeDetailProps): React.JSX.
                 onClick={handlePauseResume}
                 variant={isPaused ? "default" : "outline"}
                 className="flex-1"
+                disabled={isPending}
               >
                 {isPaused ? (
                   <>
@@ -173,12 +238,18 @@ export function ChallengeDetail({ challenge }: ChallengeDetailProps): React.JSX.
                   </>
                 )}
               </Button>
-              <Button variant="outline" onClick={() => setIsParticipating(false)}>
+              <Button variant="outline" disabled={isPending} onClick={handleLeave}>
                 退出
               </Button>
             </div>
           )}
         </div>
+
+        {error && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+            {error}
+          </div>
+        )}
 
         {isParticipating && (
           <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">

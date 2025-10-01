@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
-import type { Post } from '@/types/supabase';
+import type { Post, Profile } from '@/types/supabase';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -112,7 +112,7 @@ async function DashboardContent({ userId }: { userId: string }) {
   } = await import('@/lib/mock-data');
 
   // 実際のデータを取得
-  let userProfile = null;
+  let userProfile: Profile | null = null;
   let timelinePosts: Post[] = [];
   
   try {
@@ -124,7 +124,25 @@ async function DashboardContent({ userId }: { userId: string }) {
     console.error('データ取得エラー:', error);
     // エラー時はモックデータを使用
     const { getCurrentUser, mockTimelinePosts } = await import('@/lib/mock-data');
-    userProfile = getCurrentUser();
+    const mock = getCurrentUser();
+    userProfile = {
+      id: 'mock-user',
+      username: mock.name,
+      display_name: mock.name,
+      bio: mock.bio ?? null,
+      avatar_url: null,
+      fitness_level: 'beginner',
+      preferred_workout_types: [],
+      location: mock.location ?? null,
+      timezone: 'Asia/Tokyo',
+      role: 'user',
+      is_verified: false,
+      privacy_settings: { profile_visibility: 'public', activity_visibility: 'public' } as any,
+      stats: { total_workouts: 0, total_challenges: 0, streak_days: 0 } as any,
+      deleted_at: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
     timelinePosts = mockTimelinePosts as unknown as Post[];
   }
 

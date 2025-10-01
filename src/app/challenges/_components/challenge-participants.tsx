@@ -10,6 +10,7 @@ import { Users, Crown, Medal, Award } from 'lucide-react';
 
 interface ChallengeParticipantsProps {
   challengeId: string;
+  participants?: Participant[];
 }
 
 interface Participant {
@@ -24,9 +25,9 @@ interface Participant {
   isOnline: boolean;
 }
 
-export function ChallengeParticipants({ challengeId }: ChallengeParticipantsProps): React.JSX.Element {
-  // Mock participants data - in real app, this would be fetched based on challengeId
-  const [participants] = useState<Participant[]>([
+export function ChallengeParticipants({ challengeId, participants: initial }: ChallengeParticipantsProps): React.JSX.Element {
+  // Use provided participants or fallback to mock
+  const [participants] = useState<Participant[]>(initial ?? [
     {
       id: '1',
       name: '田中 太郎',

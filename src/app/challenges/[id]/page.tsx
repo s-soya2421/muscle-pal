@@ -2,10 +2,11 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import * as React from 'react';
 import { ChallengeDetail } from '../_components/challenge-detail';
-import { ChallengeParticipants } from '../_components/challenge-participants';
-import { ChallengeProgress } from '../_components/challenge-progress';
-import { mockActiveChallenges } from '@/lib/mock-data';
+import ChallengeParticipantsServer from '../_components/challenge-participants.server';
+import ChallengeProgressServer from '../_components/challenge-progress.server';
 import { Skeleton } from '@/components/ui/skeleton';
+import { createClient } from '@/lib/supabase/server';
+import type { MockChallenge } from '@/lib/mock-data';
 
 interface ChallengePageProps {
   params: Promise<{ id: string }>;
@@ -13,28 +14,68 @@ interface ChallengePageProps {
 
 export default async function ChallengePage({ params }: ChallengePageProps): Promise<React.JSX.Element> {
   const { id } = await params;
-  const challenge = mockActiveChallenges.find((c) => c.id === id);
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('challenges')
+    .select('id, title, description, category, difficulty, duration, participants, current_day, progress, reward')
+    .eq('id', id)
+    .is('deleted_at', null)
+    .single();
 
-  if (!challenge) {
+  if (error || !data) {
     notFound();
   }
+
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+
+  let participation: { status: string; currentDay: number } | undefined;
+  if (user) {
+    const { data: participationRow } = await supabase
+      .from('challenge_participations')
+      .select('status, current_day')
+      .eq('challenge_id', id)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (participationRow) {
+      participation = {
+        status: (participationRow as any).status ?? 'active',
+        currentDay: (participationRow as any).current_day ?? 0
+      };
+    }
+  }
+
+  const challenge: MockChallenge = {
+    id: data.id,
+    title: data.title,
+    description: data.description ?? '',
+    category: data.category ?? '',
+    difficulty: (data.difficulty ?? '初級') as MockChallenge['difficulty'],
+    duration: data.duration,
+    currentDay: data.current_day ?? 0,
+    progress: data.progress ?? 0,
+    participants: data.participants ?? 0,
+    reward: data.reward ?? undefined,
+  };
 
   return (
     <div className="container mx-auto px-4 py-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <Suspense fallback={<ChallengeDetailSkeleton />}>
-            <ChallengeDetail challenge={challenge} />
+            <ChallengeDetail challenge={challenge} participation={participation} />
           </Suspense>
           
           <Suspense fallback={<ChallengeProgressSkeleton />}>
-            <ChallengeProgress challenge={challenge} />
+            <ChallengeProgressServer challenge={challenge} />
           </Suspense>
         </div>
 
         <div className="lg:col-span-1">
           <Suspense fallback={<ChallengeParticipantsSkeleton />}>
-            <ChallengeParticipants challengeId={id} />
+            <ChallengeParticipantsServer challengeId={id} />
           </Suspense>
         </div>
       </div>

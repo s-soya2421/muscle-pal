@@ -57,3 +57,28 @@ npm run supabase:stop    # 停止
 # ローカルのインスタンスから生成
 supabase gen types typescript --local > src/types/supabase.ts
 ```
+
+### 便利スクリプト（型生成）
+
+```bash
+npm run types:gen:local      # ローカルDBから型を生成
+SUPABASE_PROJECT_ID=xxxx \
+  npm run types:gen:remote   # リモートプロジェクトから型を生成
+npm run supabase:reset:types # DBリセット後に型を再生成
+```
+
+### 開発用ログインアカウント
+
+`supabase/seed.sql` に開発用の Supabase Auth ユーザーを追加しました。
+
+- Email: `dev@muscle-pal.fit`
+- Password: `password123`
+- Role: `admin`（`public.profiles.role`）
+
+`npm run supabase:reset` または `supabase db reset` を実行すると、Auth と Profile の両方が再作成（既存の場合は更新）されます。開発用のアカウントを削除してしまった場合はリセットするか、Supabase Studio から同じ情報で追加してください。
+
+### チャレンジ機能について（現状）
+
+- UIは一覧/詳細/進捗/参加者まで実装済み。参加・一時停止・再開・チェックインはServer Actionsに接続済み。
+- 実データ連携は`supabase/migrations/20250917000001_core_challenge_and_post_images.sql`を適用し、ログイン状態で動作。
+- 初期段階ではモック表示のままでも問題ありません（クリック時のみServer Action実行）。

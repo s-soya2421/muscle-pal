@@ -33,6 +33,73 @@ afterAll(() => {
   console.error = originalError
 })
 
+// Provide minimal Fetch API globals for both server/client test envs
+if (typeof global.Request === 'undefined') {
+  global.Request = class Request {
+    constructor(input, init) {
+      this.url = input
+      this.method = init?.method || 'GET'
+      this.headers = new Map(Object.entries(init?.headers || {}))
+      this.body = init?.body
+    }
+  }
+}
+
+if (typeof global.Response === 'undefined') {
+  global.Response = class Response {
+    constructor(body, init) {
+      this.body = body
+      this.status = init?.status || 200
+      this.statusText = init?.statusText || 'OK'
+      this.headers = new Map(Object.entries(init?.headers || {}))
+    }
+  }
+}
+
+if (typeof global.Headers === 'undefined') {
+  global.Headers = class Headers {
+    constructor(init) {
+      this.map = new Map(Object.entries(init || {}))
+    }
+
+    get(name) {
+      return this.map.get(name)
+    }
+
+    set(name, value) {
+      this.map.set(name, value)
+    }
+
+    has(name) {
+      return this.map.has(name)
+    }
+  }
+}
+
+if (typeof global.FormData === 'undefined') {
+  global.FormData = class FormData {
+    constructor() {
+      this.data = new Map()
+    }
+
+    append(key, value) {
+      this.data.set(key, value)
+    }
+
+    get(key) {
+      return this.data.get(key)
+    }
+
+    has(key) {
+      return this.data.has(key)
+    }
+
+    delete(key) {
+      this.data.delete(key)
+    }
+  }
+}
+
 // DOM-specific mocks only in jsdom environment
 if (typeof window !== 'undefined') {
   // window.matchMedia のモック
@@ -81,64 +148,4 @@ if (typeof window !== 'undefined') {
   }
 }
 
-// Node.js specific mocks when window is not available
-if (typeof window === 'undefined') {
-  // Mock global Request for Server Actions
-  global.Request = class Request {
-    constructor(input, init) {
-      this.url = input
-      this.method = init?.method || 'GET'
-      this.headers = new Map(Object.entries(init?.headers || {}))
-      this.body = init?.body
-    }
-  }
-
-  global.Response = class Response {
-    constructor(body, init) {
-      this.body = body
-      this.status = init?.status || 200
-      this.statusText = init?.statusText || 'OK'
-      this.headers = new Map(Object.entries(init?.headers || {}))
-    }
-  }
-
-  global.Headers = class Headers {
-    constructor(init) {
-      this.map = new Map(Object.entries(init || {}))
-    }
-    
-    get(name) {
-      return this.map.get(name)
-    }
-    
-    set(name, value) {
-      this.map.set(name, value)
-    }
-    
-    has(name) {
-      return this.map.has(name)
-    }
-  }
-  
-  global.FormData = class FormData {
-    constructor() {
-      this.data = new Map()
-    }
-    
-    append(key, value) {
-      this.data.set(key, value)
-    }
-    
-    get(key) {
-      return this.data.get(key)
-    }
-    
-    has(key) {
-      return this.data.has(key)
-    }
-    
-    delete(key) {
-      this.data.delete(key)
-    }
-  }
-}
+// No additional Node-specific mocks required beyond fetch shims above

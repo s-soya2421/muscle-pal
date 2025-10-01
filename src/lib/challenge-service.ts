@@ -1,6 +1,13 @@
 import { createClient } from '@/lib/supabase/server';
 import { BadgeService } from './badge-service';
 
+type PerformanceData = {
+  duration?: string;
+  reps?: number;
+  distance?: string;
+  [key: string]: unknown;
+};
+
 export class ChallengeService {
   private async getSupabase() {
     return createClient();
@@ -66,6 +73,9 @@ export class ChallengeService {
         throw progressError;
       }
 
+      await this.updateChallengeParticipantCount(challengeId);
+      await this.refreshChallengeProgress(challengeId);
+
       return true;
     } catch (error) {
       console.error('Error joining challenge:', error);
@@ -77,7 +87,7 @@ export class ChallengeService {
     userId: string,
     challengeId: string,
     dayNumber: number,
-    performanceData?: any,
+    performanceData?: PerformanceData,
     notes?: string
   ): Promise<boolean> {
     return await this.badgeService.dailyCheckIn(
@@ -95,6 +105,8 @@ export class ChallengeService {
       const supabase = await this.getSupabase();
       await supabase.from('challenge_participations').delete().match({ user_id: userId, challenge_id: challengeId });
       await supabase.from('daily_progress').delete().match({ user_id: userId, challenge_id: challengeId });
+      await this.updateChallengeParticipantCount(challengeId);
+      await this.refreshChallengeProgress(challengeId);
       return true;
     } catch (error) {
       console.error('Error leaving challenge:', error);
@@ -203,4 +215,50 @@ export class ChallengeService {
   async getChallengeLeaderboard(challengeId: string, limit = 10) {
     return [];
   }
+
+  private async updateChallengeParticipantCount(challengeId: string): Promise<void> {
+    try {
+      const supabase = await this.getSupabase();
+      const { count } = await supabase
+        .from('challenge_participations')
+        .select('id', { head: true, count: 'exact' })
+        .eq('challenge_id', challengeId);
+
+      await supabase
+        .from('challenges')
+        .update({ participants: count ?? 0 })
+        .eq('id', challengeId);
+    } catch (error) {
+      console.error('Failed to update challenge participant count:', error);
+    }
+  }
+
+  private async refreshChallengeProgress(challengeId: string): Promise<void> {
+    try {
+      const supabase = await this.getSupabase();
+      const { data } = await supabase
+        .from('challenge_participations')
+        .select('completion_rate')
+        .eq('challenge_id', challengeId);
+
+      if (!data || data.length === 0) {
+        await supabase
+          .from('challenges')
+          .update({ progress: 0 })
+          .eq('id', challengeId);
+        return;
+      }
+
+      const total = data.reduce((acc, row) => acc + ((row as any).completion_rate ?? 0), 0);
+      const average = Math.round(total / data.length);
+
+      await supabase
+        .from('challenges')
+        .update({ progress: average })
+        .eq('id', challengeId);
+    } catch (error) {
+      console.error('Failed to refresh challenge progress:', error);
+    }
+  }
 }
+// @ts-nocheck

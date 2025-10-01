@@ -8,9 +8,9 @@ export interface PostImageData {
   original_filename: string;
   mime_type: string;
   file_size: number;
-  width?: number;
-  height?: number;
-  alt_text?: string;
+  width?: number | null;
+  height?: number | null;
+  alt_text?: string | null;
   display_order: number;
   url: string; // Generated URL for display
 }
@@ -109,10 +109,14 @@ export async function getPostImages(postId: string): Promise<PostImageData[]> {
     throw new Error('画像の取得に失敗しました');
   }
 
-  return (data || []).map(img => ({
-    ...img,
-    url: getImageUrl(img.storage_path),
-  }));
+  const result: PostImageData[] = [];
+  for (const img of data ?? []) {
+    result.push({
+      ...img,
+      url: getImageUrl(img.storage_path),
+    });
+  }
+  return result;
 }
 
 /**
@@ -173,7 +177,7 @@ export async function updatePostImage(
   imageId: string, 
   updates: Partial<Pick<PostImageData, 'alt_text' | 'display_order'>>
 ): Promise<void> {
-  const supabase = await createClient();
+  const supabase = (await createClient()) as any;
   
   const { error } = await supabase
     .from('post_images')

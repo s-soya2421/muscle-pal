@@ -15,7 +15,10 @@
     "supabase:start": "npx supabase start",
     "supabase:stop": "npx supabase stop",
     "supabase:status": "npx supabase status",
-    "supabase:reset": "npx supabase db reset"
+    "supabase:reset": "npx supabase db reset",
+    "types:gen:local": "npx supabase gen types typescript --local > src/types/supabase.ts",
+    "types:gen:remote": "npx supabase gen types typescript --project-id $SUPABASE_PROJECT_ID > src/types/supabase.ts",
+    "supabase:reset:types": "npm run supabase:reset && npm run types:gen:local"
   },
   "dependencies": {
     "@radix-ui/react-progress": "^1.1.7",

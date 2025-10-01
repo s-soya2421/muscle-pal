@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { uploadPostImages } from "@/lib/post-images-server";
+import type { Json } from "@/types/supabase";
 
 export interface CreatePostData {
   content: string;
@@ -10,7 +11,7 @@ export interface CreatePostData {
   post_type: "workout" | "progress" | "motivation" | "general";
   tags?: string[];
   location?: string;
-  workout_data?: Record<string, unknown>;
+  workout_data?: Json;
   // Note: images are now managed through post_images table
 }
 
@@ -20,7 +21,7 @@ export async function createPost(data: CreatePostData | FormData) {
   let post_type: "workout" | "progress" | "motivation" | "general";
   let tags: string[] = [];
   let location: string | undefined;
-  let workout_data: Record<string, unknown> = {};
+  let workout_data: Json | undefined = {} as Json;
   const imageFiles: File[] = [];
 
   // FormData か通常のオブジェクトかを判定
@@ -73,7 +74,7 @@ export async function createPost(data: CreatePostData | FormData) {
       post_type,
       tags,
       location: location || null,
-      workout_data: workout_data || {},
+      workout_data: workout_data ?? ({} as Json),
     })
     .select()
     .single();
@@ -224,21 +225,21 @@ export async function getPosts(options?: {
   }
 
   // 各投稿のいいね状況を取得（like_count, comment_countはDBカラムを使用）
+  const basePosts = data ?? [];
   const postsWithLikeStatus = await Promise.all(
-    (data || []).map(async (post) => {
-      // ユーザーがいいねしているかチェック
+    basePosts.map(async (postItem) => {
       const { data: likeData } = await supabase
         .from("post_likes")
         .select("id")
-        .eq("post_id", post.id)
+        .eq("post_id", postItem.id)
         .eq("user_id", user.id)
         .is("deleted_at", null)
         .single();
 
       return {
-        ...post,
+        ...postItem,
         is_liked: !!likeData,
-      };
+      } as (typeof basePosts)[number] & { is_liked: boolean };
     })
   );
 
@@ -264,7 +265,7 @@ export async function getUserProfile(userId: string) {
 }
 
 export async function getPostById(postId: string) {
-  const supabase = await createClient();
+  const supabase = (await createClient()) as any;
   
   const {
     data: { user },

@@ -33,10 +33,20 @@ CREATE INDEX idx_user_badges_user_id ON user_badges(user_id);
 CREATE INDEX idx_user_badges_badge_id ON user_badges(badge_id);
 CREATE INDEX idx_user_badges_earned_at ON user_badges(earned_at);
 
--- Add badge requirement to challenges table
-ALTER TABLE challenges ADD COLUMN IF NOT EXISTS required_badge_id UUID REFERENCES badges(id);
-ALTER TABLE challenges ADD COLUMN IF NOT EXISTS is_exclusive BOOLEAN DEFAULT false;
-ALTER TABLE challenges ADD COLUMN IF NOT EXISTS exclusive_message TEXT;
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+          AND table_name = 'challenges'
+    ) THEN
+        ALTER TABLE public.challenges ADD COLUMN IF NOT EXISTS required_badge_id UUID REFERENCES badges(id);
+        ALTER TABLE public.challenges ADD COLUMN IF NOT EXISTS is_exclusive BOOLEAN DEFAULT false;
+        ALTER TABLE public.challenges ADD COLUMN IF NOT EXISTS exclusive_message TEXT;
+    END IF;
+END;
+$$;
 
 -- Create function to get user's badges with details
 CREATE OR REPLACE FUNCTION get_user_badges(target_user_id UUID)

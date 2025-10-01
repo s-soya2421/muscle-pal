@@ -122,7 +122,7 @@ describe('LoginPage', () => {
 
   test('ログインエラーの表示', async () => {
     const user = userEvent.setup()
-    const mockSignIn = jest.fn().mockRejectedValue(new Error('メールアドレスまたはパスワードが正しくありません'))
+    const mockSignIn = jest.fn().mockRejectedValue(new Error('invalid credentials'))
     
     mockUseAuth.mockReturnValue({
       signIn: mockSignIn,
@@ -141,7 +141,7 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: 'ログイン' }))
     
     await waitFor(() => {
-      expect(screen.getByText('メールアドレスまたはパスワードが正しくありません')).toBeInTheDocument()
+      expect(screen.getByText('ログインに失敗しました')).toBeInTheDocument()
     })
   })
 
@@ -192,7 +192,7 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: 'ログイン' }))
     
     await waitFor(() => {
-      expect(screen.getByText('ログインエラー')).toBeInTheDocument()
+      expect(screen.getByText('ログインに失敗しました')).toBeInTheDocument()
     })
     
     // 2回目のログイン試行（成功）
@@ -202,7 +202,7 @@ describe('LoginPage', () => {
     
     // エラーメッセージがクリアされることを確認
     await waitFor(() => {
-      expect(screen.queryByText('ログインエラー')).not.toBeInTheDocument()
+      expect(screen.queryByText('ログインに失敗しました')).not.toBeInTheDocument()
     })
   })
 })

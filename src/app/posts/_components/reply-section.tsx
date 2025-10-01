@@ -17,7 +17,7 @@ interface Reply {
   profiles?: {
     username: string;
     display_name?: string;
-    avatar_url?: string;
+    avatar_url?: string | null;
   };
   likes: number;
 }
@@ -34,7 +34,7 @@ export function ReplySection({ postId, replies }: ReplySectionProps) {
   const [currentUser, setCurrentUser] = useState<{
     username: string;
     display_name?: string;
-    avatar_url?: string;
+    avatar_url?: string | null;
   } | null>(null);
   const supabase = createClient();
   

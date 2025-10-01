@@ -70,7 +70,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setState(prev => ({ ...prev, loading: true, error: null }));
       
       console.log('🔐 Starting login attempt for:', email);
-      console.log('🌐 Supabase URL:', supabase.supabaseUrl);
+      // console.log('🌐 Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,

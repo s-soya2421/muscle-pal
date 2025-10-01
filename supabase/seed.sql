@@ -3,6 +3,115 @@
 
 BEGIN;
 
+-- 開発用テストユーザー（Supabase Auth）
+DO $$
+DECLARE
+  dev_user_id uuid;
+BEGIN
+  SELECT id INTO dev_user_id FROM auth.users WHERE email = 'dev@muscle-pal.fit';
+
+  IF NOT FOUND THEN
+    dev_user_id := gen_random_uuid();
+
+    INSERT INTO auth.users (
+      id,
+      aud,
+      role,
+      email,
+      encrypted_password,
+      email_confirmed_at,
+      last_sign_in_at,
+      raw_app_meta_data,
+      raw_user_meta_data,
+      created_at,
+      updated_at
+    )
+    VALUES (
+      dev_user_id,
+      'authenticated',
+      'authenticated',
+      'dev@muscle-pal.fit',
+      crypt('password123', gen_salt('bf')),
+      now(),
+      now(),
+      jsonb_build_object('provider', 'email', 'providers', ARRAY['email']),
+      jsonb_build_object('role', 'admin', 'full_name', 'Dev User'),
+      now(),
+      now()
+    );
+  ELSE
+    UPDATE auth.users
+    SET
+      encrypted_password = crypt('password123', gen_salt('bf')),
+      email_confirmed_at = now(),
+      last_sign_in_at = now(),
+      raw_app_meta_data = jsonb_build_object('provider', 'email', 'providers', ARRAY['email']),
+      raw_user_meta_data = jsonb_build_object('role', 'admin', 'full_name', 'Dev User'),
+      updated_at = now()
+    WHERE id = dev_user_id;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM auth.identities WHERE user_id = dev_user_id AND provider = 'email'
+  ) THEN
+    INSERT INTO auth.identities (
+      user_id,
+      provider,
+      provider_id,
+      identity_data,
+      email,
+      last_sign_in_at,
+      created_at,
+      updated_at
+    )
+    VALUES (
+      dev_user_id,
+      'email',
+      'dev@muscle-pal.fit',
+      jsonb_build_object('sub', dev_user_id::text, 'email', 'dev@muscle-pal.fit'),
+      'dev@muscle-pal.fit',
+      now(),
+      now(),
+      now()
+    );
+  ELSE
+    UPDATE auth.identities
+    SET
+      identity_data = jsonb_build_object('sub', dev_user_id::text, 'email', 'dev@muscle-pal.fit'),
+      email = 'dev@muscle-pal.fit',
+      last_sign_in_at = now(),
+      updated_at = now()
+    WHERE user_id = dev_user_id AND provider = 'email';
+  END IF;
+
+  INSERT INTO public.profiles (
+    id,
+    username,
+    display_name,
+    bio,
+    role,
+    fitness_level,
+    timezone
+  )
+  VALUES (
+    dev_user_id,
+    'devuser',
+    '開発用ユーザー',
+    '開発環境での画面確認用アカウントです。',
+    'admin',
+    'intermediate',
+    'Asia/Tokyo'
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    display_name = EXCLUDED.display_name,
+    bio = EXCLUDED.bio,
+    role = EXCLUDED.role,
+    fitness_level = EXCLUDED.fitness_level,
+    timezone = EXCLUDED.timezone,
+    updated_at = now();
+END;
+$$;
+
 -- テストユーザーのプロフィール作成（認証ユーザーが存在すると仮定）
 -- 実際の開発では、auth.users テーブルにユーザーが作成された後に実行
 

@@ -12,23 +12,11 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Spinner } from '@/components/ui/spinner';
 import { createClient } from '@/lib/supabase/client';
+import type { Profile } from '@/types/supabase';
 import { ArrowLeft, Camera, X } from 'lucide-react';
 import Link from 'next/link';
 
-interface Profile {
-  id: string;
-  username: string;
-  display_name: string;
-  bio: string | null;
-  avatar_url: string | null;
-  fitness_level: 'beginner' | 'intermediate' | 'advanced';
-  preferred_workout_types: string[];
-  location: string | null;
-  privacy_settings: {
-    profile_visibility: 'public' | 'private';
-    activity_visibility: 'public' | 'private';
-  };
-}
+type DBProfile = Profile;
 
 interface ProfileEditFormProps {
   userId: string;
@@ -56,7 +44,7 @@ export function ProfileEditForm({ userId }: ProfileEditFormProps) {
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<DBProfile | null>(null);
   const [formData, setFormData] = useState({
     username: '',
     display_name: '',
@@ -84,16 +72,16 @@ export function ProfileEditForm({ userId }: ProfileEditFormProps) {
       if (error) throw error;
 
       if (data) {
-        setProfile(data);
+        setProfile(data as DBProfile);
         setFormData({
           username: data.username || '',
           display_name: data.display_name || '',
-          bio: data.bio || '',
-          fitness_level: data.fitness_level || 'beginner',
-          preferred_workout_types: data.preferred_workout_types || [],
+          bio: (data.bio as string | null) || '',
+          fitness_level: (data.fitness_level as 'beginner' | 'intermediate' | 'advanced' | null) || 'beginner',
+          preferred_workout_types: (data.preferred_workout_types as string[] | null) || [],
           location: data.location || '',
-          profile_visibility: data.privacy_settings?.profile_visibility || 'public',
-          activity_visibility: data.privacy_settings?.activity_visibility || 'public',
+          profile_visibility: ((data.privacy_settings as any)?.profile_visibility as 'public' | 'private') || 'public',
+          activity_visibility: ((data.privacy_settings as any)?.activity_visibility as 'public' | 'private') || 'public',
         });
       }
     } catch (error) {

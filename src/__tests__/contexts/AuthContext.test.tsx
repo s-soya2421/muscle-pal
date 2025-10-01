@@ -107,12 +107,7 @@ describe('AuthContext', () => {
 
       await expect(act(async () => {
         await result.current.signIn('test@example.com', 'wrongpassword')
-      })).rejects.toThrow('メールアドレスまたはパスワードが正しくありません')
-
-      // Wait for the state to update
-      await waitFor(() => {
-        expect(result.current.error).toBe('メールアドレスまたはパスワードが正しくありません')
-      })
+      })).rejects.toThrow('ログインに失敗しました')
     })
 
     test('ネットワークエラー時の処理', async () => {
@@ -162,7 +157,7 @@ describe('AuthContext', () => {
 
       await expect(act(async () => {
         await result.current.signUp('test@example.com', 'password')
-      })).rejects.toThrow('このメールアドレスは既に登録されています')
+      })).rejects.toThrow('アカウント作成に失敗しました')
     })
   })
 

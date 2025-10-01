@@ -1,41 +1,106 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import * as React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { mockActiveChallenges } from '@/lib/mock-data';
+import { mockActiveChallenges, type MockChallenge } from '@/lib/mock-data';
 import { mockUserBadges, getUserAccessibleExclusiveChallenges, getUserLockedExclusiveChallenges } from '@/lib/mock-badge-data';
 import type { ExclusiveChallenge } from '@/types/badges';
 import { Users, Trophy, Calendar, Target, Lock, Unlock } from 'lucide-react';
+import { joinChallenge } from '@/app/actions/challenges';
+
+export interface ChallengeParticipationSummary {
+  challengeId: string;
+  status: string;
+}
 
 interface ChallengesListProps {
   filter?: string;
   category?: string;
   difficulty?: string;
+  challenges?: MockChallenge[];
+  exclusiveChallenges?: ExclusiveChallenge[];
+  lockedChallenges?: ExclusiveChallenge[];
+  userParticipations?: ChallengeParticipationSummary[];
 }
 
-export function ChallengesList({ filter, category, difficulty }: ChallengesListProps): React.JSX.Element {
-  const [challenges] = useState(mockActiveChallenges);
-  const [exclusiveChallenges] = useState(getUserAccessibleExclusiveChallenges(mockUserBadges));
-  const [lockedChallenges] = useState(getUserLockedExclusiveChallenges(mockUserBadges));
+export function ChallengesList({ filter, category, difficulty, challenges: initialChallenges, exclusiveChallenges: initialExclusive, lockedChallenges: initialLocked, userParticipations }: ChallengesListProps): React.JSX.Element {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [lastError, setLastError] = useState<{ id: string; message: string } | null>(null);
 
-  const filteredChallenges = challenges.filter((challenge) => {
-    if (category && challenge.category !== category) return false;
-    if (difficulty && challenge.difficulty !== difficulty) return false;
-    if (filter) {
-      const searchTerm = filter.toLowerCase();
-      return (
-        challenge.title.toLowerCase().includes(searchTerm) ||
-        challenge.description.toLowerCase().includes(searchTerm) ||
-        challenge.category.toLowerCase().includes(searchTerm)
-      );
-    }
-    return true;
+  const list = useMemo<MockChallenge[]>(() => {
+    return initialChallenges && initialChallenges.length > 0 ? initialChallenges : mockActiveChallenges;
+  }, [initialChallenges]);
+
+  const exclusiveChallenges = useMemo<ExclusiveChallenge[]>(() => {
+    if (initialExclusive) return initialExclusive;
+    return getUserAccessibleExclusiveChallenges(mockUserBadges);
+  }, [initialExclusive]);
+
+  const lockedChallenges = useMemo<ExclusiveChallenge[]>(() => {
+    if (initialLocked) return initialLocked;
+    return getUserLockedExclusiveChallenges(mockUserBadges);
+  }, [initialLocked]);
+
+  const filteredChallenges = useMemo(() => {
+    return list.filter((challenge) => {
+      if (category && challenge.category !== category) return false;
+      if (difficulty && challenge.difficulty !== difficulty) return false;
+      if (filter) {
+        const searchTerm = filter.toLowerCase();
+        return (
+          challenge.title.toLowerCase().includes(searchTerm) ||
+          challenge.description.toLowerCase().includes(searchTerm) ||
+          challenge.category.toLowerCase().includes(searchTerm)
+        );
+      }
+      return true;
+    });
+  }, [list, category, difficulty, filter]);
+
+  const [optimisticParticipations, setOptimisticParticipations] = useState<Set<string>>(() => {
+    return new Set((userParticipations ?? []).map((item) => item.challengeId));
   });
+
+  useEffect(() => {
+    setOptimisticParticipations(new Set((userParticipations ?? []).map((item) => item.challengeId)));
+  }, [userParticipations]);
+
+  const handleJoin = (challengeId: string): void => {
+    setLastError(null);
+    setPendingId(challengeId);
+
+    startTransition(async () => {
+      try {
+        const result = await joinChallenge(challengeId);
+        if (result.ok) {
+          setOptimisticParticipations((prev) => {
+            const next = new Set(prev);
+            next.add(challengeId);
+            return next;
+          });
+          router.refresh();
+        } else {
+          setLastError({ id: challengeId, message: result.message ?? '参加できませんでした。' });
+        }
+      } catch (error) {
+        console.error('Failed to join challenge', error);
+        setLastError({ id: challengeId, message: '参加処理中にエラーが発生しました。' });
+      } finally {
+        setPendingId(null);
+      }
+    });
+  };
+
+  const isParticipating = (challengeId: string): boolean => optimisticParticipations.has(challengeId);
+  const isJoining = (challengeId: string): boolean => isPending && pendingId === challengeId;
 
   const getDifficultyColor = (difficulty: string): string => {
     switch (difficulty) {
@@ -62,7 +127,14 @@ export function ChallengesList({ filter, category, difficulty }: ChallengesListP
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {exclusiveChallenges.filter(c => c.canParticipate).map((challenge) => (
-              <ExclusiveChallengeCard key={challenge.id} challenge={challenge} />
+              <ExclusiveChallengeCard
+                key={challenge.id}
+                challenge={challenge}
+                onJoin={handleJoin}
+                isParticipating={isParticipating(challenge.id)}
+                isJoining={isJoining(challenge.id)}
+                errorMessage={lastError?.id === challenge.id ? lastError.message : undefined}
+              />
             ))}
           </div>
         </div>
@@ -140,10 +212,24 @@ export function ChallengesList({ filter, category, difficulty }: ChallengesListP
                     詳細を見る
                   </Link>
                 </Button>
-                <Button variant="outline" size="sm">
-                  参加する
-                </Button>
+                {isParticipating(challenge.id) ? (
+                  <Button variant="outline" size="sm" disabled>
+                    参加済み
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={isJoining(challenge.id)}
+                    onClick={() => handleJoin(challenge.id)}
+                  >
+                    {isJoining(challenge.id) ? '参加処理中…' : '参加する'}
+                  </Button>
+                )}
               </div>
+              {lastError?.id === challenge.id && (
+                <p className="text-xs text-red-600 mt-2">{lastError.message}</p>
+              )}
             </CardFooter>
           </Card>
         ))}
@@ -182,7 +268,19 @@ export function ChallengesList({ filter, category, difficulty }: ChallengesListP
 }
 
 // 限定チャレンジ（参加可能）用のカード
-function ExclusiveChallengeCard({ challenge }: { challenge: ExclusiveChallenge }): React.JSX.Element {
+function ExclusiveChallengeCard({
+  challenge,
+  onJoin,
+  isParticipating,
+  isJoining,
+  errorMessage
+}: {
+  challenge: ExclusiveChallenge;
+  onJoin: (challengeId: string) => void;
+  isParticipating: boolean;
+  isJoining: boolean;
+  errorMessage?: string;
+}): React.JSX.Element {
   const getDifficultyColor = (difficulty: string): string => {
     switch (difficulty) {
       case '初級':
@@ -250,10 +348,17 @@ function ExclusiveChallengeCard({ challenge }: { challenge: ExclusiveChallenge }
       </CardContent>
 
       <CardFooter className="pt-0">
-        <Button className="w-full bg-blue-600 hover:bg-blue-700">
+        <Button
+          className="w-full bg-blue-600 hover:bg-blue-700"
+          disabled={isParticipating || isJoining}
+          onClick={() => onJoin(challenge.id)}
+        >
           <Unlock className="h-4 w-4 mr-2" />
-          限定チャレンジに参加
+          {isParticipating ? '参加済み' : isJoining ? '参加処理中…' : '限定チャレンジに参加'}
         </Button>
+        {errorMessage && (
+          <p className="text-xs text-red-100 mt-2 text-center">{errorMessage}</p>
+        )}
       </CardFooter>
     </Card>
   );

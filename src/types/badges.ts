@@ -9,7 +9,7 @@ export interface Badge {
   category: BadgeCategory;
   difficulty: BadgeDifficulty;
   conditionType: string;
-  conditionValue: Record<string, any>;
+  conditionValue: Record<string, unknown>;
   unlocksFeatures: string[];
   isActive: boolean;
   createdAt: string;

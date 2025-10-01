@@ -1,8 +1,5 @@
 import { handleAuthError, logAuthError } from '@/lib/auth-errors'
 
-// console.error をモック（後でrestoreするために保持）
-jest.spyOn(console, 'error').mockImplementation(() => {})
-
 describe('auth-errors', () => {
 
   describe('handleAuthError', () => {

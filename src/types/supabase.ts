@@ -34,6 +34,62 @@ export type Database = {
   }
   public: {
     Tables: {
+      post_images: {
+        Row: {
+          id: string
+          post_id: string
+          storage_path: string
+          original_filename: string
+          mime_type: string
+          file_size: number
+          width: number | null
+          height: number | null
+          alt_text: string | null
+          display_order: number
+          deleted_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          post_id: string
+          storage_path: string
+          original_filename: string
+          mime_type: string
+          file_size: number
+          width?: number | null
+          height?: number | null
+          alt_text?: string | null
+          display_order: number
+          deleted_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          post_id?: string
+          storage_path?: string
+          original_filename?: string
+          mime_type?: string
+          file_size?: number
+          width?: number | null
+          height?: number | null
+          alt_text?: string | null
+          display_order?: number
+          deleted_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_images_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       challenges: {
         Row: {
           category: string | null
@@ -331,12 +387,222 @@ export type Database = {
         }
         Relationships: []
       }
+      badges: {
+        Row: {
+          id: string
+          name: string
+          slug: string
+          description: string | null
+          icon: string | null
+          category: string | null
+          difficulty: string | null
+          condition_type: string | null
+          condition_value: Json | null
+          unlocks_features: string[] | null
+          is_active: boolean | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          slug: string
+          description?: string | null
+          icon?: string | null
+          category?: string | null
+          difficulty?: string | null
+          condition_type?: string | null
+          condition_value?: Json | null
+          unlocks_features?: string[] | null
+          is_active?: boolean | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          slug?: string
+          description?: string | null
+          icon?: string | null
+          category?: string | null
+          difficulty?: string | null
+          condition_type?: string | null
+          condition_value?: Json | null
+          unlocks_features?: string[] | null
+          is_active?: boolean | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      challenge_participations: {
+        Row: {
+          id: string
+          user_id: string
+          challenge_id: string
+          status: string | null
+          current_day: number | null
+          completion_rate: number | null
+          started_at: string | null
+          paused_at: string | null
+          resumed_at: string | null
+          last_check_in: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          challenge_id: string
+          status?: string | null
+          current_day?: number | null
+          completion_rate?: number | null
+          started_at?: string | null
+          paused_at?: string | null
+          resumed_at?: string | null
+          last_check_in?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          challenge_id?: string
+          status?: string | null
+          current_day?: number | null
+          completion_rate?: number | null
+          started_at?: string | null
+          paused_at?: string | null
+          resumed_at?: string | null
+          last_check_in?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_participations_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_participations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      daily_progress: {
+        Row: {
+          id: string
+          user_id: string
+          challenge_id: string
+          day_number: number
+          target_date: string | null
+          status: string | null
+          completed_at: string | null
+          notes: string | null
+          performance_data: Json | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          challenge_id: string
+          day_number: number
+          target_date?: string | null
+          status?: string | null
+          completed_at?: string | null
+          notes?: string | null
+          performance_data?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          challenge_id?: string
+          day_number?: number
+          target_date?: string | null
+          status?: string | null
+          completed_at?: string | null
+          notes?: string | null
+          performance_data?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_progress_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      toggle_post_like: {
+        Args: { p_post_id: string }
+        Returns: boolean
+      }
+      update_post_like_count: {
+        Args: { p_post_id: string }
+        Returns: null
+      }
+      get_user_badges: {
+        Args: { target_user_id: string }
+        Returns: {
+          badge_id: string
+          badge_name: string
+          badge_slug: string
+          badge_icon: string | null
+          badge_category: string | null
+          earned_at: string
+          personal_note: string | null
+          stats: Json | null
+        }[]
+      }
+      get_accessible_challenges: {
+        Args: { target_user_id: string }
+        Returns: Json[]
+      }
+      get_challenge_leaderboard: {
+        Args: { target_challenge_id: string; limit_count?: number }
+        Returns: {
+          user_id: string
+          display_name: string | null
+          avatar_url: string | null
+          fitness_level: string | null
+          current_day: number | null
+          completion_rate: number | null
+        }[]
+      }
+      award_badge_to_user: {
+        Args: {
+          target_user_id: string
+          badge_slug: string
+          challenge_id: string
+          user_note?: string | null
+          achievement_stats?: Json | null
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
