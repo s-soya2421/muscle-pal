@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/react'
 import { PostCard } from '@/app/posts/_components/post-card'
 
+type PostCardData = Parameters<typeof PostCard>[0]['post']
+
 describe('PostCard', () => {
   const basePost = {
     id: 'post-1',
@@ -13,7 +15,7 @@ describe('PostCard', () => {
     tags: ['fitness'],
     location: 'Tokyo, Japan',
     media_urls: [],
-  } as any
+  } as unknown as PostCardData
 
   it('renders post content and metadata', () => {
     render(<PostCard post={basePost} />)

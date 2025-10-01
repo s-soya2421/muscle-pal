@@ -150,7 +150,11 @@ export class ChallengeService {
         .select(`*, challenge:challenges(*)`)
         .eq('user_id', userId)
         .in('status', ['active', 'paused']);
-      return data || [];
+      if (error) {
+        console.error('Error fetching user active challenges:', error);
+        return [];
+      }
+      return data ?? [];
     } catch (error) {
       console.error('Error fetching user active challenges:', error);
       return [];
@@ -165,6 +169,11 @@ export class ChallengeService {
         .select('*')
         .match({ user_id: userId, challenge_id: challengeId })
         .order('day_number');
+
+      if (error) {
+        console.error('Error fetching challenge progress:', error);
+        return [];
+      }
 
       return data?.map(day => ({
         day: day.day_number,
@@ -204,6 +213,7 @@ export class ChallengeService {
   }
 
   async getChallengeStats(challengeId: string) {
+    void challengeId;
     return {
       totalParticipants: 0,
       activeParticipants: 0,
@@ -212,7 +222,9 @@ export class ChallengeService {
     };
   }
 
-  async getChallengeLeaderboard(challengeId: string, limit = 10) {
+  async getChallengeLeaderboard(_challengeId: string, _limit = 10) {
+    void _challengeId;
+    void _limit;
     return [];
   }
 
@@ -238,7 +250,7 @@ export class ChallengeService {
       const supabase = await this.getSupabase();
       const { data } = await supabase
         .from('challenge_participations')
-        .select('completion_rate')
+        .select<{ completion_rate: number | null }>('completion_rate')
         .eq('challenge_id', challengeId);
 
       if (!data || data.length === 0) {
@@ -249,7 +261,7 @@ export class ChallengeService {
         return;
       }
 
-      const total = data.reduce((acc, row) => acc + ((row as any).completion_rate ?? 0), 0);
+      const total = data.reduce((acc, row) => acc + (row.completion_rate ?? 0), 0);
       const average = Math.round(total / data.length);
 
       await supabase

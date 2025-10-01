@@ -18,6 +18,34 @@ import Link from 'next/link';
 
 type DBProfile = Profile;
 
+type PrivacySettings = {
+  profile_visibility?: 'public' | 'private';
+  activity_visibility?: 'public' | 'private';
+};
+
+const parsePrivacySettings = (value: Profile['privacy_settings']): PrivacySettings => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+
+  const record = value as Record<string, unknown>;
+  const profileVisibility = record.profile_visibility === 'private'
+    ? 'private'
+    : record.profile_visibility === 'public'
+      ? 'public'
+      : undefined;
+  const activityVisibility = record.activity_visibility === 'private'
+    ? 'private'
+    : record.activity_visibility === 'public'
+      ? 'public'
+      : undefined;
+
+  return {
+    profile_visibility: profileVisibility,
+    activity_visibility: activityVisibility,
+  };
+};
+
 interface ProfileEditFormProps {
   userId: string;
 }
@@ -58,38 +86,47 @@ export function ProfileEditForm({ userId }: ProfileEditFormProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    fetchProfile();
-  }, [userId]);
+    let isMounted = true;
 
-  const fetchProfile = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+    const loadProfile = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
 
-      if (error) throw error;
+        if (error) throw error;
 
-      if (data) {
-        setProfile(data as DBProfile);
-        setFormData({
-          username: data.username || '',
-          display_name: data.display_name || '',
-          bio: (data.bio as string | null) || '',
-          fitness_level: (data.fitness_level as 'beginner' | 'intermediate' | 'advanced' | null) || 'beginner',
-          preferred_workout_types: (data.preferred_workout_types as string[] | null) || [],
-          location: data.location || '',
-          profile_visibility: ((data.privacy_settings as any)?.profile_visibility as 'public' | 'private') || 'public',
-          activity_visibility: ((data.privacy_settings as any)?.activity_visibility as 'public' | 'private') || 'public',
-        });
+        if (data && isMounted) {
+          setProfile(data as DBProfile);
+          const privacySettings = parsePrivacySettings(data.privacy_settings);
+          setFormData({
+            username: data.username || '',
+            display_name: data.display_name || '',
+            bio: (data.bio as string | null) || '',
+            fitness_level: (data.fitness_level as 'beginner' | 'intermediate' | 'advanced' | null) || 'beginner',
+            preferred_workout_types: (data.preferred_workout_types as string[] | null) || [],
+            location: data.location || '',
+            profile_visibility: privacySettings.profile_visibility ?? 'public',
+            activity_visibility: privacySettings.activity_visibility ?? 'public',
+          });
+        }
+      } catch (error) {
+        console.error('プロフィール取得エラー:', error);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
       }
-    } catch (error) {
-      console.error('プロフィール取得エラー:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    void loadProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [supabase, userId]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};

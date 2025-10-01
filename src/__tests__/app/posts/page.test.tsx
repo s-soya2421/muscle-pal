@@ -12,6 +12,8 @@ jest.mock('@/app/actions/posts', () => ({
 
 const mockGetPosts = getPosts as jest.MockedFunction<typeof getPosts>
 
+type PostsResult = Awaited<ReturnType<typeof getPosts>>
+
 describe('PostsPage (server)', () => {
   beforeEach(() => {
     jest.clearAllMocks()
@@ -35,7 +37,7 @@ describe('PostsPage (server)', () => {
         comment_count: 0,
         created_at: '2024-01-01T00:00:00Z',
         post_type: 'general',
-      } as any,
+      } as unknown as PostsResult[number],
     ])
 
     const element = await PostsPage()

@@ -37,12 +37,12 @@ export default async function ChallengePage({ params }: ChallengePageProps): Pro
       .select('status, current_day')
       .eq('challenge_id', id)
       .eq('user_id', user.id)
-      .maybeSingle();
+      .maybeSingle<{ status: string | null; current_day: number | null }>();
 
     if (participationRow) {
       participation = {
-        status: (participationRow as any).status ?? 'active',
-        currentDay: (participationRow as any).current_day ?? 0
+        status: participationRow.status ?? 'active',
+        currentDay: participationRow.current_day ?? 0
       };
     }
   }

@@ -114,7 +114,7 @@ export function ChallengeParticipants({ challengeId, participants: initial }: Ch
   };
 
   return (
-    <Card>
+    <Card data-challenge-id={challengeId}>
       <CardHeader>
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">

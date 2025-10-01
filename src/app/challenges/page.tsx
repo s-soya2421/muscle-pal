@@ -5,6 +5,18 @@ import type { MockChallenge } from '@/lib/mock-data';
 import type { ExclusiveChallenge } from '@/types/badges';
 import type { ChallengeParticipationSummary } from './_components/challenges-list';
 
+type AccessibleChallengeRow = {
+  challenge_id: string;
+  title: string;
+  description: string;
+  category: string;
+  difficulty: string;
+  duration: number;
+  is_exclusive: boolean;
+  required_badge_name: string | null;
+  can_participate: boolean;
+};
+
 async function getChallengesData(): Promise<MockChallenge[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -40,9 +52,9 @@ export default async function ChallengesPage(): Promise<React.JSX.Element> {
   let serverLocked: ExclusiveChallenge[] | undefined;
   let userParticipations: ChallengeParticipationSummary[] | undefined;
   if (user) {
-    const { data: ex } = await supabase.rpc('get_accessible_challenges', { target_user_id: user.id });
+    const { data: ex } = await supabase.rpc<AccessibleChallengeRow[]>('get_accessible_challenges', { target_user_id: user.id });
     if (ex && Array.isArray(ex)) {
-      const mapped = ex.map((row: any) => ({
+      const mapped = ex.map((row) => ({
         id: row.challenge_id,
         title: row.title,
         description: row.description,
@@ -62,13 +74,13 @@ export default async function ChallengesPage(): Promise<React.JSX.Element> {
 
     const { data: participationRows } = await supabase
       .from('challenge_participations')
-      .select('challenge_id, status')
+      .select<{ challenge_id: string; status: string }>('challenge_id, status')
       .eq('user_id', user.id);
 
     if (participationRows) {
-      userParticipations = participationRows.map((row: any) => ({
-        challengeId: row.challenge_id as string,
-        status: row.status as string,
+      userParticipations = participationRows.map((row) => ({
+        challengeId: row.challenge_id,
+        status: row.status,
       }));
     }
   }

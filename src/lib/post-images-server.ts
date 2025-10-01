@@ -177,7 +177,7 @@ export async function updatePostImage(
   imageId: string, 
   updates: Partial<Pick<PostImageData, 'alt_text' | 'display_order'>>
 ): Promise<void> {
-  const supabase = (await createClient()) as any;
+  const supabase = await createClient();
   
   const { error } = await supabase
     .from('post_images')

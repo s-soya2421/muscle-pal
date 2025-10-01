@@ -1,4 +1,4 @@
-import type { Badge, UserBadge, ExclusiveChallenge, BadgeStats } from '@/types/badges';
+import type { Badge, UserBadge, ExclusiveChallenge } from '@/types/badges';
 
 // Mock Badge definitions
 export const mockBadges: Badge[] = [

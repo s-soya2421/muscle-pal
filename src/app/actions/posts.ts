@@ -265,7 +265,7 @@ export async function getUserProfile(userId: string) {
 }
 
 export async function getPostById(postId: string) {
-  const supabase = (await createClient()) as any;
+  const supabase = await createClient();
   
   const {
     data: { user },

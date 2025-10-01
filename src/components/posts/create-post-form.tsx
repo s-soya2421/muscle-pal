@@ -13,7 +13,7 @@ import { ArrowLeft, Send, X } from 'lucide-react';
 import Link from 'next/link';
 
 interface CreatePostFormProps {
-  userId: string;
+  userId?: string;
 }
 
 const POST_TYPES = [
@@ -153,7 +153,7 @@ export function CreatePostForm({ userId }: CreatePostFormProps) {
         </Link>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6" data-user-id={userId ?? undefined}>
         {/* 投稿タイプ */}
         <Card>
           <CardHeader>

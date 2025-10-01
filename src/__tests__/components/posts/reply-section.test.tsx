@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { ReplySection } from '@/app/posts/_components/reply-section'
 import { createComment } from '@/app/actions/posts'
@@ -39,7 +40,7 @@ jest.mock('@/components/ui/button', () => ({
 }))
 
 jest.mock('@/components/posts/like-button', () => ({
-  LikeButton: ({ postId, initialLikeCount }: { postId: string; initialLikeCount: number }) => (
+  LikeButton: ({ initialLikeCount }: { postId: string; initialLikeCount: number }) => (
     <div data-testid="like-button">{initialLikeCount}</div>
   ),
 }))

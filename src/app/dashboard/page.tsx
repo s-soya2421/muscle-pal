@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
-import type { Post, Profile } from '@/types/supabase';
+import type { Json, Post, Profile } from '@/types/supabase';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -125,6 +125,15 @@ async function DashboardContent({ userId }: { userId: string }) {
     // エラー時はモックデータを使用
     const { getCurrentUser, mockTimelinePosts } = await import('@/lib/mock-data');
     const mock = getCurrentUser();
+    const privacySettings: Json = {
+      profile_visibility: 'public',
+      activity_visibility: 'public',
+    };
+    const stats: Json = {
+      total_workouts: 0,
+      total_challenges: 0,
+      streak_days: 0,
+    };
     userProfile = {
       id: 'mock-user',
       username: mock.name,
@@ -137,8 +146,8 @@ async function DashboardContent({ userId }: { userId: string }) {
       timezone: 'Asia/Tokyo',
       role: 'user',
       is_verified: false,
-      privacy_settings: { profile_visibility: 'public', activity_visibility: 'public' } as any,
-      stats: { total_workouts: 0, total_challenges: 0, streak_days: 0 } as any,
+      privacy_settings: privacySettings,
+      stats,
       deleted_at: null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),

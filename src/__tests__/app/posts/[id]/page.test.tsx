@@ -35,7 +35,7 @@ describe('PostDetailPage (server)', () => {
       comment_count: 3,
       created_at: '2024-01-01T00:00:00Z',
       post_type: 'general',
-    } as any)
+    } as unknown as Awaited<ReturnType<typeof getPostById>>)
     mockGetPostComments.mockResolvedValueOnce([])
 
     const element = await PostDetailPage({ params: Promise.resolve({ id: 'post-1' }) })

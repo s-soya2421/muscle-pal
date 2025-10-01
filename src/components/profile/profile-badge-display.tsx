@@ -223,7 +223,7 @@ export function ProfileBadgeDisplay({ userBadges, isOwnProfile = false }: Profil
               <div className="p-4 bg-white rounded-lg">
                 <h4 className="font-medium text-gray-900 mb-2">思い出メモ</h4>
                 <p className="text-gray-700 text-sm italic">
-                  "{selectedBadge.personalNote}"
+                  &quot;{selectedBadge.personalNote}&quot;
                 </p>
               </div>
             )}

@@ -159,7 +159,7 @@ export function ChallengesFilters({ onFilterChange }: ChallengesFiltersProps): R
             <div className="flex flex-wrap gap-2">
               {filters.search && (
                 <Badge variant="outline" className="flex items-center gap-1">
-                  "{filters.search}"
+                  &quot;{filters.search}&quot;
                   <button onClick={() => clearFilter('search')}>
                     <X className="h-3 w-3" />
                   </button>

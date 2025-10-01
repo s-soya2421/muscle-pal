@@ -13,6 +13,55 @@ import { createClient as createServerClient } from '@/lib/supabase/server'
 import { uploadPostImages } from '@/lib/post-images-server'
 import { revalidatePath } from 'next/cache'
 
+type MockQueryResult<T> = { data: T; error: unknown }
+
+type PromiseHandlers<T> = [
+  ((value: MockQueryResult<T>) => unknown) | undefined,
+  ((reason: unknown) => unknown) | undefined
+]
+
+type MockQuery<T> = {
+  result: MockQueryResult<T>
+  insert: jest.Mock<MockQuery<T>, [unknown?]>
+  update: jest.Mock<MockQuery<T>, [unknown?]>
+  delete: jest.Mock<MockQuery<T>, [unknown?]>
+  select: jest.Mock<MockQuery<T>, [unknown?]>
+  eq: jest.Mock<MockQuery<T>, [string, unknown]>
+  match: jest.Mock<MockQuery<T>, [Record<string, unknown>]>
+  is: jest.Mock<MockQuery<T>, [string, unknown]>
+  order: jest.Mock<MockQuery<T>, [string, { ascending?: boolean }?]>
+  limit: jest.Mock<MockQuery<T>, [number]>
+  range: jest.Mock<MockQuery<T>, [number, number]>
+  single: jest.Mock<Promise<MockQueryResult<T>>, []>
+  maybeSingle: jest.Mock<Promise<MockQueryResult<T>>, []>
+  then: jest.Mock<Promise<MockQueryResult<T>>, PromiseHandlers<T>>
+}
+
+type CreateMockClientOptions = {
+  user?: { data: { user: { id: string } | null }; error: unknown }
+  tables?: Record<string, MockQuery<unknown>>
+  rpcResult?: MockQueryResult<unknown>
+}
+
+type MockSupabaseClient = {
+  auth: {
+    getUser: jest.Mock<Promise<{ data: { user: { id: string } | null }; error: unknown }>, []>
+  }
+  from: jest.Mock<MockQuery<unknown>, [string]>
+  rpc: jest.Mock<Promise<MockQueryResult<unknown>>, [string, Record<string, unknown>?]>
+  storage: {
+    from: jest.Mock<
+      {
+        upload: jest.Mock<Promise<{ data: { path: string }; error: null }>, [string, Blob]>
+        remove: jest.Mock<Promise<{ data: null; error: null }>, [string[]]>
+      },
+      [string]
+    >
+  }
+}
+
+type SupabaseClientLike = Awaited<ReturnType<typeof createServerClient>>
+
 describe('Server actions: posts', () => {
   const mockCreateClient = createServerClient as jest.MockedFunction<typeof createServerClient>
   const mockUpload = uploadPostImages as jest.MockedFunction<typeof uploadPostImages>
@@ -22,31 +71,31 @@ describe('Server actions: posts', () => {
     jest.resetAllMocks()
   })
 
-  const buildQuery = (initial: { data: any; error: any }) => {
-    const query: any = {
+  const buildQuery = <T>(initial: MockQueryResult<T>): MockQuery<T> => {
+    const query: Partial<MockQuery<T>> = {
       result: initial,
-      insert: jest.fn(() => query),
-      update: jest.fn(() => query),
-      delete: jest.fn(() => query),
-      select: jest.fn(() => query),
-      eq: jest.fn(() => query),
-      match: jest.fn(() => query),
-      is: jest.fn(() => query),
-      order: jest.fn(() => query),
-      limit: jest.fn(() => query),
-      range: jest.fn(() => query),
-      single: jest.fn(() => Promise.resolve(query.result)),
-      maybeSingle: jest.fn(() => Promise.resolve(query.result)),
-      then: jest.fn((resolve, reject) => Promise.resolve(query.result).then(resolve, reject)),
     }
-    return query
+
+    query.insert = jest.fn(() => query as MockQuery<T>)
+    query.update = jest.fn(() => query as MockQuery<T>)
+    query.delete = jest.fn(() => query as MockQuery<T>)
+    query.select = jest.fn(() => query as MockQuery<T>)
+    query.eq = jest.fn(() => query as MockQuery<T>)
+    query.match = jest.fn(() => query as MockQuery<T>)
+    query.is = jest.fn(() => query as MockQuery<T>)
+    query.order = jest.fn(() => query as MockQuery<T>)
+    query.limit = jest.fn(() => query as MockQuery<T>)
+    query.range = jest.fn(() => query as MockQuery<T>)
+    query.single = jest.fn(() => Promise.resolve(query.result as MockQueryResult<T>))
+    query.maybeSingle = jest.fn(() => Promise.resolve(query.result as MockQueryResult<T>))
+    query.then = jest.fn((resolve, reject) =>
+      Promise.resolve(query.result as MockQueryResult<T>).then(resolve, reject)
+    )
+
+    return query as MockQuery<T>
   }
 
-  const createMockClient = (options: {
-    user?: any
-    tables?: Record<string, ReturnType<typeof buildQuery>>
-    rpcResult?: { data: any; error: any }
-  }) => {
+  const createMockClient = (options: CreateMockClientOptions = {}): MockSupabaseClient => {
     const tables = options.tables ?? {}
     return {
       auth: {
@@ -71,6 +120,9 @@ describe('Server actions: posts', () => {
     }
   }
 
+  const resolveMockClient = (client: MockSupabaseClient) =>
+    mockCreateClient.mockResolvedValueOnce(client as unknown as SupabaseClientLike)
+
   jest.mock('@/lib/supabase/server')
   jest.mock('@/lib/post-images-server')
   jest.mock('next/cache')
@@ -83,7 +135,7 @@ describe('Server actions: posts', () => {
     it('creates post and revalidates feeds', async () => {
       const postsQuery = buildQuery({ data: { id: 'post-1' }, error: null })
       const mockClient = createMockClient({ tables: { posts: postsQuery } })
-      mockCreateClient.mockResolvedValueOnce(mockClient as any)
+      resolveMockClient(mockClient)
 
       const form = new FormData()
       form.append('content', '  テスト投稿  ')
@@ -106,7 +158,7 @@ describe('Server actions: posts', () => {
     it('uploads images when provided', async () => {
       const postsQuery = buildQuery({ data: { id: 'post-img' }, error: null })
       const mockClient = createMockClient({ tables: { posts: postsQuery } })
-      mockCreateClient.mockResolvedValueOnce(mockClient as any)
+      resolveMockClient(mockClient)
 
       const file = new File(['binary'], 'photo.jpg', { type: 'image/jpeg' })
       const form = new FormData()
@@ -126,7 +178,7 @@ describe('Server actions: posts', () => {
           posts: buildQuery({ data: null, error: null }),
         },
       })
-      mockCreateClient.mockResolvedValueOnce(mockClient as any)
+      resolveMockClient(mockClient)
 
       await expect(createPost(new FormData())).rejects.toThrow('ログインが必要です')
     })
@@ -145,7 +197,7 @@ describe('Server actions: posts', () => {
           post_likes: likeStatusQuery,
         },
       })
-      mockCreateClient.mockResolvedValueOnce(mockClient as any)
+      resolveMockClient(mockClient)
 
       const posts = await getPosts()
 
@@ -192,7 +244,7 @@ describe('Server actions: posts', () => {
         throw new Error(`Unexpected table ${table}`)
       })
 
-      mockCreateClient.mockResolvedValueOnce(mockClient as any)
+      resolveMockClient(mockClient)
 
       const result = await getPostById('post-1')
 
@@ -212,7 +264,7 @@ describe('Server actions: posts', () => {
       const mockClient = createMockClient({
         tables: { post_comments: commentsQuery },
       })
-      mockCreateClient.mockResolvedValueOnce(mockClient as any)
+      resolveMockClient(mockClient)
 
       const result = await getPostComments('post-1')
 
@@ -228,7 +280,7 @@ describe('Server actions: posts', () => {
       commentQuery.single = jest.fn(() => Promise.resolve({ data: commentResult, error: null }))
 
       const mockClient = createMockClient({ tables: { post_comments: commentQuery } })
-      mockCreateClient.mockResolvedValueOnce(mockClient as any)
+      resolveMockClient(mockClient)
 
       const created = await createComment('post-1', 'ナイス！')
 

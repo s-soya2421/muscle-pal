@@ -1,7 +1,5 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LikeButton } from "@/components/posts/like-button";
 import { MessageSquare } from "lucide-react";
@@ -113,19 +111,19 @@ export function PostCard({ post }: PostCardProps) {
         {/* {false && isPost && (post as Post).post_type === 'workout' && (
           <div className="bg-gray-50 rounded-lg p-3 space-y-2">
             <h4 className="text-sm font-medium text-gray-700">ワークアウト詳細</h4>
-            {((post as Post).workout_data!.exercises as any[]).slice(0, 3).map((exercise: any, index: number) => (
+            {((post as Post).workout_data!.exercises as Array<Record<string, unknown>>).slice(0, 3).map((exercise: Record<string, unknown>, index: number) => (
               <div key={index} className="text-xs text-gray-600">
-                <span className="font-medium">{exercise.name}</span>
+                <span className="font-medium">{exercise.name as string}</span>
                 {exercise.sets && exercise.reps && (
-                  <span> - {exercise.sets}セット × {exercise.reps}回</span>
+                  <span> - {exercise.sets as number}セット × {exercise.reps as number}回</span>
                 )}
                 {exercise.weight && (
-                  <span> ({exercise.weight}kg)</span>
+                  <span> ({exercise.weight as number}kg)</span>
                 )}
               </div>
             ))}
-            {((post as Post).workout_data!.exercises as any[]).length > 3 && (
-              <p className="text-xs text-gray-500">+{((post as Post).workout_data!.exercises as any[]).length - 3}件の種目</p>
+            {((post as Post).workout_data!.exercises as Array<Record<string, unknown>>).length > 3 && (
+              <p className="text-xs text-gray-500">+{((post as Post).workout_data!.exercises as Array<Record<string, unknown>>).length - 3}件の種目</p>
             )}
           </div>
         )} */}

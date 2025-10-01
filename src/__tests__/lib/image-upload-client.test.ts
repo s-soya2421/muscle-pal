@@ -13,7 +13,12 @@ const createMockFile = (
   type: string,
   size: number
 ): File => {
-  return new File(['test'], name, { type, lastModified: Date.now() })
+  const file = new File(['test'], name, { type, lastModified: Date.now() })
+  Object.defineProperty(file, 'size', {
+    value: size,
+    configurable: true,
+  })
+  return file
 }
 
 describe('IMAGE_CONFIG', () => {

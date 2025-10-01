@@ -196,7 +196,7 @@ export function BadgeCollection(): React.JSX.Element {
                 <div className="p-4 bg-white rounded-lg border">
                   <h5 className="font-medium text-gray-900 mb-2">思い出メモ</h5>
                   <p className="text-sm text-gray-700 italic">
-                    "{selectedBadge.personalNote}"
+                    &quot;{selectedBadge.personalNote}&quot;
                   </p>
                 </div>
               )}

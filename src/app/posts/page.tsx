@@ -8,7 +8,7 @@ import { CreatePostForm } from "./_components/create-post-form";
 import { MainLayout } from "@/components/layout/main-layout";
 
 // --- Types ---
-import type { Post, Profile } from "@/types/supabase";
+import type { Post } from "@/types/supabase";
 
 // --- Data fetch on the server ---
 async function getPostsData(): Promise<Post[]> {

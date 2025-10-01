@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import type { Badge, UserBadge, BadgeStats } from '@/types/badges';
+import type { Database, Json } from '@/types/supabase';
 
 type GetUserBadgesRow = {
   badge_id: string;
@@ -9,7 +10,7 @@ type GetUserBadgesRow = {
   badge_category: string | null;
   earned_at: string;
   personal_note: string | null;
-  stats: import('@/types/supabase').Json | null;
+  stats: Json | null;
 };
 
 type PerformanceData = {
@@ -17,6 +18,9 @@ type PerformanceData = {
   reps?: number;
   distance?: string;
 };
+
+type ChallengeRow = Database['public']['Tables']['challenges']['Row'];
+type ChallengeWithRewardSlug = ChallengeRow & { reward_badge_slug: string | null };
 
 export class BadgeService {
   private async getSupabase() {
@@ -110,9 +114,9 @@ export class BadgeService {
         .from('challenges')
         .select('*, reward_badge_slug:reward->badge_slug')
         .eq('id', challengeId)
-        .single();
+        .single<ChallengeWithRewardSlug>();
 
-      if (!challenge || !challenge.reward_badge_slug) {
+      if (!challenge?.reward_badge_slug) {
         return false;
       }
 
@@ -123,10 +127,10 @@ export class BadgeService {
       const { data, error } = await supabase
         .rpc('award_badge_to_user', {
           target_user_id: userId,
-          badge_slug: String((challenge as any).reward_badge_slug ?? ''),
+          badge_slug: challenge.reward_badge_slug ?? '',
           challenge_id: challengeId,
           user_note: personalNote || null,
-          achievement_stats: (stats as unknown) as import('@/types/supabase').Json
+          achievement_stats: stats as Json
         });
 
       if (error) {
@@ -245,7 +249,7 @@ export class BadgeService {
     userId: string,
     challengeId: string,
     dayNumber: number,
-    performanceData?: any,
+    performanceData?: PerformanceData,
     notes?: string
   ): Promise<boolean> {
     try {
@@ -329,13 +333,13 @@ export class BadgeService {
 
     const { data: participationRows } = await supabase
       .from('challenge_participations')
-      .select('completion_rate')
+      .select<{ completion_rate: number | null }>('completion_rate')
       .eq('challenge_id', challengeId);
 
     const participantCount = participationRows?.length ?? 0;
     const averageCompletion = participantCount > 0
       ? Math.round(
-          participationRows!.reduce((sum, row) => sum + ((row as any).completion_rate ?? 0), 0) /
+          participationRows.reduce((sum, row) => sum + (row.completion_rate ?? 0), 0) /
             participantCount
         )
       : 0;

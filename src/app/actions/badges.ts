@@ -1,13 +1,13 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
 import { BadgeService } from '@/lib/badge-service';
 import { ChallengeService } from '@/lib/challenge-service';
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 
 const badgeService = new BadgeService();
 const challengeService = new ChallengeService();
+
+type PerformanceDataInput = Parameters<ChallengeService['performCheckIn']>[3];
 
 /**
  * ユーザーのバッジ一覧を取得
@@ -135,7 +135,7 @@ export async function performDailyCheckIn(
   userId: string,
   challengeId: string,
   dayNumber: number,
-  performanceData?: any,
+  performanceData?: PerformanceDataInput,
   notes?: string
 ) {
   try {

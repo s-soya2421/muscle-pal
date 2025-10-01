@@ -15,6 +15,8 @@ jest.mock('next/navigation', () => ({
 const mockCreateServerClient = createServerClient as jest.MockedFunction<typeof createServerClient>
 const mockRedirect = redirect as jest.MockedFunction<typeof redirect>
 
+type SupabaseClientLike = Awaited<ReturnType<typeof createServerClient>>
+
 describe('NewPostPage (server)', () => {
   beforeEach(() => {
     jest.clearAllMocks()
@@ -25,7 +27,7 @@ describe('NewPostPage (server)', () => {
       auth: {
         getUser: jest.fn().mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null }),
       },
-    } as any)
+    } as unknown as SupabaseClientLike)
 
     const element = await NewPostPage()
     const html = renderToString(element)
@@ -39,7 +41,7 @@ describe('NewPostPage (server)', () => {
       auth: {
         getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
       },
-    } as any)
+    } as unknown as SupabaseClientLike)
 
     await NewPostPage()
 
