@@ -5,8 +5,11 @@ import type { Database } from '@/types/supabase'
 export const createClient = async () => {
   const cookieStore = await cookies()
 
+  // Use server-specific URL for Docker internal network, fallback to public URL
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!
+
   return createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseUrl,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {

@@ -12,7 +12,15 @@
       "Bash(rm:*)",
       "Bash(npx supabase:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "mcp__serena__check_onboarding_performed",
+      "Bash(docker-compose:*)",
+      "Bash(docker exec:*)",
+      "Bash(docker restart:*)",
+      "Bash(docker logs:*)",
+      "mcp__serena__find_symbol"
     ],
     "deny": []
   }

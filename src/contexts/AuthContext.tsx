@@ -15,7 +15,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [state, setState] = useState<AuthState>({
     user: null,
     loading: true,
-    error: null
+    error: null,
   });
 
   const supabase = createClient();
@@ -24,25 +24,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // 初期認証状態を取得
     const getInitialUser = async () => {
       try {
-        const { data: { user }, error } = await supabase.auth.getUser();
-        
+        const {
+          data: { user },
+          error,
+        } = await supabase.auth.getUser();
+
         if (error) {
           const japaneseError = handleAuthError(error, 'login');
-          setState(prev => ({ ...prev, error: japaneseError, loading: false }));
+          setState((prev) => ({ ...prev, error: japaneseError, loading: false }));
           return;
         }
 
         setState({
-          user: user,
+          user,
           loading: false,
-          error: null
+          error: null,
         });
       } catch (error) {
         const japaneseError = handleAuthError(error, 'login');
-        setState(prev => ({ 
-          ...prev, 
-          error: japaneseError, 
-          loading: false 
+        setState((prev) => ({
+          ...prev,
+          error: japaneseError,
+          loading: false,
         }));
       }
     };
@@ -50,15 +53,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     getInitialUser();
 
     // 認証状態の変更を監視
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setState({
-          user: session?.user ?? null,
-          loading: false,
-          error: null
-        });
-      }
-    );
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setState({
+        user: session?.user ?? null,
+        loading: false,
+        error: null,
+      });
+    });
 
     return () => {
       subscription.unsubscribe();
@@ -67,14 +70,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signIn = async (email: string, password: string): Promise<void> => {
     try {
-      setState(prev => ({ ...prev, loading: true, error: null }));
-      
+      setState((prev) => ({ ...prev, loading: true, error: null }));
+
       console.log('🔐 Starting login attempt for:', email);
-      // console.log('🌐 Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
-      
+      console.log('🌐 Supabase URL:', supabase.supabaseUrl);
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
-        password
+        password,
       });
 
       console.log('📡 Login response:', { data, error });
@@ -82,7 +85,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (error) {
         console.error('❌ Login error:', error);
         const japaneseError = handleAuthError(error, 'login');
-        setState(prev => ({ ...prev, error: japaneseError, loading: false }));
+        setState((prev) => ({ ...prev, error: japaneseError, loading: false }));
         throw new Error(japaneseError);
       }
 
@@ -90,66 +93,66 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error) {
       console.error('💥 Catch block error:', error);
       const japaneseError = handleAuthError(error, 'login');
-      setState(prev => ({ ...prev, error: japaneseError, loading: false }));
+      setState((prev) => ({ ...prev, error: japaneseError, loading: false }));
       throw new Error(japaneseError);
     }
   };
 
   const signUp = async (email: string, password: string): Promise<void> => {
     try {
-      setState(prev => ({ ...prev, loading: true, error: null }));
-      
+      setState((prev) => ({ ...prev, loading: true, error: null }));
+
       const { error } = await supabase.auth.signUp({
         email,
-        password
+        password,
       });
 
       if (error) {
         const japaneseError = handleAuthError(error, 'signup');
-        setState(prev => ({ ...prev, error: japaneseError, loading: false }));
+        setState((prev) => ({ ...prev, error: japaneseError, loading: false }));
         throw new Error(japaneseError);
       }
     } catch (error) {
       const japaneseError = handleAuthError(error, 'signup');
-      setState(prev => ({ ...prev, error: japaneseError, loading: false }));
+      setState((prev) => ({ ...prev, error: japaneseError, loading: false }));
       throw new Error(japaneseError);
     }
   };
 
   const signOut = async (): Promise<void> => {
     try {
-      setState(prev => ({ ...prev, loading: true, error: null }));
-      
+      setState((prev) => ({ ...prev, loading: true, error: null }));
+
       const { error } = await supabase.auth.signOut();
 
       if (error) {
         const japaneseError = handleAuthError(error, 'logout');
-        setState(prev => ({ ...prev, error: japaneseError, loading: false }));
+        setState((prev) => ({ ...prev, error: japaneseError, loading: false }));
         throw new Error(japaneseError);
       }
     } catch (error) {
       const japaneseError = handleAuthError(error, 'logout');
-      setState(prev => ({ ...prev, error: japaneseError, loading: false }));
+      setState((prev) => ({ ...prev, error: japaneseError, loading: false }));
       throw new Error(japaneseError);
     }
   };
 
   const resetPassword = async (email: string): Promise<void> => {
     try {
-      setState(prev => ({ ...prev, loading: true, error: null }));
-      
+      setState((prev) => ({ ...prev, loading: true, error: null }));
+
       const { error } = await supabase.auth.resetPasswordForEmail(email);
 
       if (error) {
         const japaneseError = handleAuthError(error, 'reset');
-        setState(prev => ({ ...prev, error: japaneseError, loading: false }));
+        setState((prev) => ({ ...prev, error: japaneseError, loading: false }));
         throw new Error(japaneseError);
       }
 
-      setState(prev => ({ ...prev, loading: false }));
+      setState((prev) => ({ ...prev, loading: false }));
     } catch (error) {
       const japaneseError = handleAuthError(error, 'reset');
-      setState(prev => ({ ...prev, error: japaneseError, loading: false }));
+      setState((prev) => ({ ...prev, error: japaneseError, loading: false }));
       throw new Error(japaneseError);
     }
   };
@@ -159,22 +162,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
     signIn,
     signUp,
     signOut,
-    resetPassword
+    resetPassword,
   };
 
-  return (
-    <AuthContext.Provider value={contextValue}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
-  
+
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
-  
+
   return context;
 }

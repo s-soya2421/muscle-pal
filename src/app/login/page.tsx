@@ -13,7 +13,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  
+
   const { signIn } = useAuth()
   const router = useRouter()
 
@@ -26,13 +26,12 @@ export default function LoginPage() {
       console.log('🔐 Starting login process...')
       await signIn(email, password)
       console.log('✅ Login successful, preparing to navigate...')
-      
+
       // 認証状態の同期を待つため少し待機
       setTimeout(() => {
         console.log('🚀 Navigating to dashboard...')
         router.push('/dashboard')
       }, 100)
-      
     } catch (error) {
       console.error('❌ Login failed:', error)
       setError(handleAuthError(error, 'login page'))
@@ -57,7 +56,7 @@ export default function LoginPage() {
                 {error}
               </div>
             )}
-            
+
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-medium text-gray-700">
                 メールアドレス
@@ -88,11 +87,7 @@ export default function LoginPage() {
               />
             </div>
 
-            <Button 
-              type="submit" 
-              disabled={loading}
-              className="w-full"
-            >
+            <Button type="submit" disabled={loading} className="w-full">
               {loading ? 'ログイン中...' : 'ログイン'}
             </Button>
           </form>

@@ -19,9 +19,9 @@ beforeAll(() => {
     if (
       typeof args[0] === 'string' &&
       (args[0].includes('Warning: ReactDOM.render is deprecated') ||
-       args[0].includes('Warning: useLayoutEffect does nothing on the server') ||
-       args[0].includes('An update to') ||
-       args[0].includes('Warning: useLayoutEffect'))
+        args[0].includes('Warning: useLayoutEffect does nothing on the server') ||
+        args[0].includes('An update to') ||
+        args[0].includes('Warning: useLayoutEffect'))
     ) {
       return
     }
@@ -105,7 +105,7 @@ if (typeof window !== 'undefined') {
   // window.matchMedia のモック
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
-    value: jest.fn().mockImplementation(query => ({
+    value: jest.fn().mockImplementation((query) => ({
       matches: false,
       media: query,
       onchange: null,
@@ -119,6 +119,7 @@ if (typeof window !== 'undefined') {
 
   // IntersectionObserver のモック
   global.IntersectionObserver = class IntersectionObserver {
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
     constructor() {}
     observe() {
       return null

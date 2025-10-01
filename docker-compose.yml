@@ -1,0 +1,317 @@
+
+services:
+  # Supabase Stack
+  db:
+    image: postgres:17-alpine
+    container_name: muscle-pal-db
+    restart: unless-stopped
+    ports:
+      - "54322:5432"
+    environment:
+      POSTGRES_HOST: /var/run/postgresql
+      PGPORT: 5432
+      POSTGRES_PORT: 5432
+      PGPASSWORD: your-super-secret-and-long-postgres-password
+      POSTGRES_PASSWORD: your-super-secret-and-long-postgres-password
+      PGDATABASE: postgres
+      POSTGRES_DB: postgres
+      JWT_SECRET: your-super-secret-jwt-token-with-at-least-32-characters-long
+      JWT_EXP: 3600
+      GOTRUE_JWT_SECRET: your-super-secret-jwt-token-with-at-least-32-characters-long
+      GOTRUE_JWT_EXP: 3600
+      JWT_AUD: authenticated
+      JWT_DEFAULT_GROUP_NAME: authenticated
+      POSTGRES_INITDB_ARGS: "--auth-host=md5 --auth-local=md5"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/00-init.sql
+      - ./docker/init-badge-system.sql:/docker-entrypoint-initdb.d/01-badges.sql
+      - ./supabase/migrations:/docker-entrypoint-initdb.d/migrations
+    networks:
+      - muscle-pal-network
+
+  # Supabase Auth (GoTrue)
+  auth:
+    image: supabase/gotrue:v2.151.0
+    container_name: muscle-pal-auth
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: http://localhost:8000
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:your-super-secret-and-long-postgres-password@db:5432/postgres?search_path=auth
+      GOTRUE_SITE_URL: http://localhost:3000
+      GOTRUE_URI_ALLOW_LIST: "http://localhost:3000"
+      GOTRUE_DISABLE_SIGNUP: "false"
+      GOTRUE_JWT_SECRET: your-super-secret-jwt-token-with-at-least-32-characters-long
+      GOTRUE_JWT_EXP: 3600
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      GOTRUE_EXTERNAL_PHONE_ENABLED: "false"
+      GOTRUE_SMS_AUTOCONFIRM: "true"
+      GOTRUE_MAILER_AUTOCONFIRM: "true"
+      GOTRUE_MAILER_SECURE_EMAIL_CHANGE_ENABLED: "false"
+      GOTRUE_SMTP_ADMIN_EMAIL: admin@muscle-pal.com
+      GOTRUE_SMTP_HOST: inbucket
+      GOTRUE_SMTP_PORT: 2500
+      GOTRUE_SMTP_USER: ""
+      GOTRUE_SMTP_PASS: ""
+      GOTRUE_SMTP_SENDER_NAME: MusclePal
+      GOTRUE_PASSWORD_MIN_LENGTH: 6
+    ports:
+      - "9999:9999"
+    networks:
+      - muscle-pal-network
+
+  # Supabase REST API (PostgREST)
+  rest:
+    image: postgrest/postgrest:latest
+    container_name: muscle-pal-rest
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      PGRST_DB_URI: postgres://authenticator:your-super-secret-and-long-postgres-password@db:5432/postgres
+      PGRST_DB_SCHEMAS: public,storage,auth
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: your-super-secret-jwt-token-with-at-least-32-characters-long
+      PGRST_DB_USE_LEGACY_GUCS: "false"
+      PGRST_APP_SETTINGS_JWT_SECRET: your-super-secret-jwt-token-with-at-least-32-characters-long
+      PGRST_APP_SETTINGS_JWT_EXP: 3600
+    ports:
+      - "3000:3000"
+    networks:
+      - muscle-pal-network
+
+  # Supabase Realtime
+  realtime:
+    image: supabase/realtime:v2.28.32
+    container_name: muscle-pal-realtime
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      PORT: 4000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: supabase_realtime_admin
+      DB_PASSWORD: your-super-secret-and-long-postgres-password
+      DB_NAME: postgres
+      DB_AFTER_CONNECT_QUERY: 'SET search_path TO _realtime'
+      DB_ENC_KEY: supabaserealtime
+      API_JWT_SECRET: your-super-secret-jwt-token-with-at-least-32-characters-long
+      FLY_ALLOC_ID: fly123
+      FLY_APP_NAME: realtime
+      SECRET_KEY_BASE: UpNVntn3cDxHJpq99YMc1T1AQgQpc8kfYTuRgBiYa15BLrx8etQoXz3gZv1/u2oq
+      ERL_AFLAGS: -proto_dist inet_tcp
+      ENABLE_TAILSCALE: "false"
+      DNS_NODES: "''"
+    ports:
+      - "4000:4000"
+    networks:
+      - muscle-pal-network
+
+  # Postgres Meta (required for Studio)
+  meta:
+    image: supabase/postgres-meta:v0.80.0
+    container_name: muscle-pal-meta
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      PG_META_PORT: 8080
+      PG_META_DB_HOST: db
+      PG_META_DB_PORT: 5432
+      PG_META_DB_NAME: postgres
+      PG_META_DB_USER: postgres
+      PG_META_DB_PASSWORD: your-super-secret-and-long-postgres-password
+    ports:
+      - "8080:8080"
+    networks:
+      - muscle-pal-network
+
+  # Supabase Storage
+  storage:
+    image: supabase/storage-api:latest
+    container_name: muscle-pal-storage
+    restart: unless-stopped
+    depends_on:
+      - db
+      - rest
+    environment:
+      ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+      SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+      POSTGREST_URL: http://rest:3000
+      PGRST_JWT_SECRET: your-super-secret-jwt-token-with-at-least-32-characters-long
+      DATABASE_URL: postgres://supabase_storage_admin:your-super-secret-and-long-postgres-password@db:5432/postgres
+      FILE_SIZE_LIMIT: 52428800
+      STORAGE_BACKEND: file
+      FILE_STORAGE_BACKEND_PATH: /var/lib/storage
+      TENANT_ID: stub
+      REGION: stub
+      GLOBAL_S3_BUCKET: stub
+      ENABLE_IMAGE_TRANSFORMATION: "true"
+      IMGPROXY_URL: http://imgproxy:5001
+    ports:
+      - "5000:5000"
+    volumes:
+      - storage_data:/var/lib/storage
+    networks:
+      - muscle-pal-network
+
+  # Image Proxy for transformations
+  imgproxy:
+    image: darthsim/imgproxy:latest
+    container_name: muscle-pal-imgproxy
+    restart: unless-stopped
+    environment:
+      IMGPROXY_BIND: "0.0.0.0:5001"
+      IMGPROXY_LOCAL_FILESYSTEM_ROOT: /var/lib/storage
+      IMGPROXY_USE_ETAG: "true"
+      IMGPROXY_ENABLE_WEBP_DETECTION: "true"
+    volumes:
+      - storage_data:/var/lib/storage:ro
+    networks:
+      - muscle-pal-network
+
+  # Kong API Gateway
+  kong:
+    image: kong:latest
+    container_name: muscle-pal-kong
+    restart: unless-stopped
+    depends_on:
+      - auth
+      - rest
+      - realtime
+      - storage
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /var/lib/kong/kong.yml
+      KONG_DNS_ORDER: LAST,A,CNAME
+      KONG_PLUGINS: request-transformer,cors,key-auth,acl,basic-auth
+      KONG_NGINX_PROXY_PROXY_BUFFER_SIZE: 160k
+      KONG_NGINX_PROXY_PROXY_BUFFERS: 64 160k
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./docker/kong.yml:/var/lib/kong/kong.yml:ro
+    networks:
+      - muscle-pal-network
+
+  # Email testing server
+  inbucket:
+    image: inbucket/inbucket:latest
+    container_name: muscle-pal-inbucket
+    restart: unless-stopped
+    environment:
+      INBUCKET_WEB_ADDR: 0.0.0.0:9000
+      INBUCKET_POP3_ADDR: 0.0.0.0:9110
+      INBUCKET_SMTP_ADDR: 0.0.0.0:2500
+    ports:
+      - "54324:9000"
+    networks:
+      - muscle-pal-network
+
+  # Supabase Studio (Admin UI) - Main database management interface  
+  studio:
+    image: supabase/studio:20240326-5e5586d
+    container_name: muscle-pal-studio
+    restart: unless-stopped
+    depends_on:
+      - db
+      - rest
+      - kong
+    environment:
+      # Supabase URLs - Qiita記事参考
+      SUPABASE_URL: http://kong:8000
+      SUPABASE_PUBLIC_URL: http://localhost:8000
+      # Authentication keys
+      SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+      SUPABASE_SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+      # JWT secrets - 重要
+      AUTH_JWT_SECRET: your-super-secret-jwt-token-with-at-least-32-characters-long
+      JWT_SECRET: your-super-secret-jwt-token-with-at-least-32-characters-long
+      # Database connection - 直接接続とPostgREST経由の両方
+      DATABASE_URL: postgresql://postgres:your-super-secret-and-long-postgres-password@db:5432/postgres
+      POSTGRES_PASSWORD: your-super-secret-and-long-postgres-password
+      # Meta API connection - 重要な設定
+      STUDIO_PG_META_URL: http://meta:8080
+      STUDIO_LOAD_BALANCER_URL: http://kong:8000
+      PGRST_JWT_SECRET: your-super-secret-jwt-token-with-at-least-32-characters-long
+      # Project configuration
+      DEFAULT_ORGANIZATION: muscle-pal
+      DEFAULT_PROJECT: default
+      # Development settings
+      NEXT_TELEMETRY_DISABLED: 1
+      NODE_ENV: development
+      STUDIO_PORT: 3000
+    ports:
+      - "54323:3000"
+    networks:
+      - muscle-pal-network
+
+  # Migration service - 初回起動時の自動マイグレーション
+  migration:
+    build: 
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: muscle-pal-migration
+    depends_on:
+      - kong
+      - db
+      - auth
+    environment:
+      AUTO_MIGRATE: ${AUTO_MIGRATE:-false}
+      SKIP_MIGRATION: ${SKIP_MIGRATION:-false}
+      NEXT_PUBLIC_SUPABASE_URL: http://localhost:8000
+      SUPABASE_SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+    volumes:
+      - .:/app
+      - /app/node_modules
+    working_dir: /app
+    command: ["sh", "./scripts/init-migrations.sh"]
+    networks:
+      - muscle-pal-network
+    profiles:
+      - migration
+
+  # Next.js Application
+  app:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: muscle-pal-app
+    restart: unless-stopped
+    depends_on:
+      - kong
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_SUPABASE_URL: http://localhost:8000
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+      SUPABASE_SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+      JWT_SECRET: your-super-secret-jwt-token-with-at-least-32-characters-long
+      JWT_REFRESH_SECRET: your-refresh-secret-key-minimum-32-characters
+      NEXT_PUBLIC_STORAGE_BASE_URL: http://localhost:8000/storage/v1/object/public
+      SUPABASE_STORAGE_BUCKET: posts-images
+    ports:
+      - "3001:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - muscle-pal-network
+
+volumes:
+  db_data:
+    driver: local
+  storage_data:
+    driver: local
+
+networks:
+  muscle-pal-network:
+    driver: bridge
