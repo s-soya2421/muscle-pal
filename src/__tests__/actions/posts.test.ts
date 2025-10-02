@@ -13,6 +13,18 @@ import { createClient as createServerClient } from '@/lib/supabase/server'
 import { uploadPostImages } from '@/lib/post-images-server'
 import { revalidatePath } from 'next/cache'
 
+jest.mock('@/lib/supabase/server', () => ({
+  createClient: jest.fn(),
+}))
+
+jest.mock('@/lib/post-images-server', () => ({
+  uploadPostImages: jest.fn(),
+}))
+
+jest.mock('next/cache', () => ({
+  revalidatePath: jest.fn(),
+}))
+
 type MockQueryResult<T> = { data: T; error: unknown }
 
 type PromiseHandlers<T> = [
@@ -123,10 +135,6 @@ describe('Server actions: posts', () => {
   const resolveMockClient = (client: MockSupabaseClient) =>
     mockCreateClient.mockResolvedValueOnce(client as unknown as SupabaseClientLike)
 
-  jest.mock('@/lib/supabase/server')
-  jest.mock('@/lib/post-images-server')
-  jest.mock('next/cache')
-
   afterAll(() => {
     jest.resetModules()
   })
@@ -180,7 +188,10 @@ describe('Server actions: posts', () => {
       })
       resolveMockClient(mockClient)
 
-      await expect(createPost(new FormData())).rejects.toThrow('ログインが必要です')
+      const form = new FormData()
+      form.append('content', 'テスト投稿')
+
+      await expect(createPost(form)).rejects.toThrow('ログインが必要です')
     })
   })
 
@@ -261,14 +272,18 @@ describe('Server actions: posts', () => {
     it('returns ordered comments', async () => {
       const comments = [{ id: 'c1', content: 'Nice' }]
       const commentsQuery = buildQuery({ data: comments, error: null })
+      const likesQuery = buildQuery({ data: [], error: null })
       const mockClient = createMockClient({
-        tables: { post_comments: commentsQuery },
+        tables: {
+          post_comments: commentsQuery,
+          post_likes: likesQuery,
+        },
       })
       resolveMockClient(mockClient)
 
       const result = await getPostComments('post-1')
 
-      expect(result).toEqual(comments)
+      expect(result).toMatchObject([{ id: 'c1', content: 'Nice', likes: 0 }])
       expect(commentsQuery.order).toHaveBeenCalledWith('created_at', { ascending: true })
     })
   })
@@ -289,7 +304,7 @@ describe('Server actions: posts', () => {
         author_id: 'user-123',
         content: 'ナイス！',
       })
-      expect(created).toMatchObject(commentResult)
+      expect(created).toMatchObject({ ...commentResult, likes: 0 })
       expect(mockRevalidate).toHaveBeenCalledWith('/posts/post-1')
     })
   })

@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import type { MockChallenge } from '@/lib/mock-data';
 import type { ExclusiveChallenge } from '@/types/badges';
 import type { ChallengeParticipationSummary } from './_components/challenges-list';
+import type { Json } from '@/types/supabase';
 
 type AccessibleChallengeRow = {
   challenge_id: string;
@@ -16,6 +17,33 @@ type AccessibleChallengeRow = {
   required_badge_name: string | null;
   can_participate: boolean;
 };
+
+function parseAccessibleChallengeRow(row: Json): AccessibleChallengeRow | null {
+  if (!row || typeof row !== 'object' || Array.isArray(row)) {
+    return null;
+  }
+
+  const record = row as Record<string, Json>;
+  const challengeId = typeof record.challenge_id === 'string' ? record.challenge_id : null;
+
+  if (!challengeId) {
+    return null;
+  }
+
+  return {
+    challenge_id: challengeId,
+    title: typeof record.title === 'string' ? record.title : '限定チャレンジ',
+    description: typeof record.description === 'string' ? record.description : '',
+    category: typeof record.category === 'string' ? record.category : '未分類',
+    difficulty: typeof record.difficulty === 'string' ? record.difficulty : '初級',
+    duration: typeof record.duration === 'number' ? record.duration : 0,
+    is_exclusive: typeof record.is_exclusive === 'boolean' ? record.is_exclusive : false,
+    required_badge_name: typeof record.required_badge_name === 'string'
+      ? record.required_badge_name
+      : null,
+    can_participate: typeof record.can_participate === 'boolean' ? record.can_participate : false,
+  };
+}
 
 async function getChallengesData(): Promise<MockChallenge[]> {
   const supabase = await createClient();
@@ -52,9 +80,13 @@ export default async function ChallengesPage(): Promise<React.JSX.Element> {
   let serverLocked: ExclusiveChallenge[] | undefined;
   let userParticipations: ChallengeParticipationSummary[] | undefined;
   if (user) {
-    const { data: ex } = await supabase.rpc<AccessibleChallengeRow[]>('get_accessible_challenges', { target_user_id: user.id });
-    if (ex && Array.isArray(ex)) {
-      const mapped = ex.map((row) => ({
+    const { data: ex } = await supabase.rpc('get_accessible_challenges', { target_user_id: user.id });
+    if (Array.isArray(ex)) {
+      const parsed = ex
+        .map(parseAccessibleChallengeRow)
+        .filter((row): row is AccessibleChallengeRow => row != null);
+
+      const mapped = parsed.map((row) => ({
         id: row.challenge_id,
         title: row.title,
         description: row.description,
@@ -74,13 +106,13 @@ export default async function ChallengesPage(): Promise<React.JSX.Element> {
 
     const { data: participationRows } = await supabase
       .from('challenge_participations')
-      .select<{ challenge_id: string; status: string }>('challenge_id, status')
+      .select('challenge_id, status')
       .eq('user_id', user.id);
 
-    if (participationRows) {
+    if (Array.isArray(participationRows)) {
       userParticipations = participationRows.map((row) => ({
         challengeId: row.challenge_id,
-        status: row.status,
+        status: row.status ?? 'unknown',
       }));
     }
   }

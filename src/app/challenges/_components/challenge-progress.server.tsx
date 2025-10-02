@@ -1,6 +1,12 @@
 import { createClient } from '@/lib/supabase/server';
 import { ChallengeProgress } from './challenge-progress';
 import type { MockChallenge } from '@/lib/mock-data';
+import type { Database } from '@/types/supabase';
+
+type DailyProgressSummary = Pick<
+  Database['public']['Tables']['daily_progress']['Row'],
+  'day_number' | 'target_date' | 'status'
+>;
 
 export default async function ChallengeProgressServer({ challenge }: { challenge: MockChallenge }) {
   const supabase = await createClient();
@@ -17,7 +23,7 @@ export default async function ChallengeProgressServer({ challenge }: { challenge
     .select('status')
     .eq('user_id', user.id)
     .eq('challenge_id', challenge.id)
-    .maybeSingle<{ status: string | null }>();
+    .maybeSingle();
 
   if (!participationRow) {
     return <ChallengeProgress challenge={challenge} canCheckIn={false} participationStatus="not_joined" />;
@@ -27,11 +33,13 @@ export default async function ChallengeProgressServer({ challenge }: { challenge
 
   const { data } = await supabase
     .from('daily_progress')
-    .select<{ day_number: number; target_date: string | null; status: string | null }>('day_number, target_date, status')
+    .select('day_number, target_date, status')
     .match({ user_id: user.id, challenge_id: challenge.id })
     .order('day_number', { ascending: true });
 
-  const days = (data ?? []).map((row) => ({
+  const dailyRows: DailyProgressSummary[] = Array.isArray(data) ? data : [];
+
+  const days = dailyRows.map((row) => ({
     day: row.day_number,
     completed: row.status === 'completed',
     date: row.target_date ?? undefined,

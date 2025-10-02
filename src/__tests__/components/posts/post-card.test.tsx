@@ -14,7 +14,7 @@ describe('PostCard', () => {
     post_type: 'general',
     tags: ['fitness'],
     location: 'Tokyo, Japan',
-    media_urls: [],
+    images: [],
   } as unknown as PostCardData
 
   it('renders post content and metadata', () => {
@@ -28,7 +28,7 @@ describe('PostCard', () => {
   it('shows image gallery when URLs are present', () => {
     const postWithImages = {
       ...basePost,
-      media_urls: ['https://example.com/img1.jpg', 'https://example.com/img2.jpg'],
+      images: ['https://example.com/img1.jpg', 'https://example.com/img2.jpg'],
     }
 
     render(<PostCard post={postWithImages} />)

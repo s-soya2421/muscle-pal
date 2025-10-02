@@ -149,7 +149,11 @@ function getContextualErrorMessage(context: string): string {
 
 export function logAuthError(error: unknown, context: string = ''): void {
   // Don't log if there's no meaningful error
-  if (!error || (typeof error === 'object' && Object.keys(error as object).length === 0)) {
+  if (!error) {
+    return;
+  }
+
+  if (typeof error === 'object' && !(error instanceof Error) && Object.keys(error as object).length === 0) {
     return;
   }
 

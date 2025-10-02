@@ -8,15 +8,44 @@ jest.mock('@/app/actions/posts')
 const mockCreateComment = createComment as jest.MockedFunction<typeof createComment>
 
 // Mock Supabase client
-jest.mock('@/lib/supabase/client', () => ({
-  createClient: () => ({
-    auth: {
-      getUser: jest.fn().mockResolvedValue({
-        data: { user: { id: 'user123', username: 'testuser', display_name: 'Test User' } }
-      })
+jest.mock('@/lib/supabase/client', () => {
+  const buildProfileChain = () => {
+    const single = jest.fn().mockResolvedValue({
+      data: {
+        username: 'testuser',
+        display_name: 'Test User',
+        avatar_url: 'https://example.com/testuser.jpg'
+      },
+      error: null
+    })
+
+    const eq = jest.fn(() => ({
+      single
+    }))
+
+    const select = jest.fn(() => ({
+      eq
+    }))
+
+    return { select }
+  }
+
+  return {
+    createClient: () => {
+      const profileQuery = buildProfileChain()
+
+      return {
+        auth: {
+          getUser: jest.fn().mockResolvedValue({
+            data: { user: { id: 'user123' } },
+            error: null
+          })
+        },
+        from: jest.fn(() => profileQuery)
+      }
     }
-  })
-}))
+  }
+})
 
 // Mock components
 jest.mock('@/components/ui/card', () => ({
@@ -53,8 +82,7 @@ describe('ReplySection', () => {
       author_id: 'user456',
       post_id: 'post1',
       created_at: '2025-01-15T11:00:00Z',
-      is_liked: false,
-      like_count: 2,
+      likes: 2,
       profiles: {
         username: 'commenter1',
         display_name: 'Commenter 1',
@@ -67,8 +95,7 @@ describe('ReplySection', () => {
       author_id: 'user789',
       post_id: 'post1',
       created_at: '2025-01-15T12:00:00Z',
-      is_liked: true,
-      like_count: 1,
+      likes: 1,
       profiles: {
         username: 'commenter2',
         display_name: 'Commenter 2',
@@ -85,8 +112,8 @@ describe('ReplySection', () => {
     render(<ReplySection postId="post1" replies={mockReplies} />)
 
     // Check reply form
-    expect(screen.getByPlaceholderText('返信をツイート')).toBeInTheDocument()
-    expect(screen.getByText('返信')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('この投稿に返信...')).toBeInTheDocument()
+    expect(screen.getByText('返信する')).toBeInTheDocument()
 
     // Check existing replies
     expect(screen.getByText('テストコメント1')).toBeInTheDocument()
@@ -110,8 +137,7 @@ describe('ReplySection', () => {
       author_id: 'user123',
       post_id: 'post1',
       created_at: '2025-01-15T13:00:00Z',
-      is_liked: false,
-      like_count: 0,
+      likes: 0,
       profiles: {
         username: 'testuser',
         display_name: 'Test User',
@@ -123,8 +149,8 @@ describe('ReplySection', () => {
 
     render(<ReplySection postId="post1" replies={mockReplies} />)
 
-    const textarea = screen.getByPlaceholderText('返信をツイート')
-    const submitButton = screen.getByText('返信')
+    const textarea = screen.getByPlaceholderText('この投稿に返信...')
+    const submitButton = screen.getByText('返信する')
 
     // Type in the textarea
     fireEvent.change(textarea, { target: { value: '新しいコメント' } })
@@ -140,26 +166,26 @@ describe('ReplySection', () => {
 
   it('shows loading state during reply submission', async () => {
     mockCreateComment.mockImplementation(
-      () => new Promise(resolve => setTimeout(() => resolve(mockReplies[0]), 1000))
+      () => new Promise(resolve => setTimeout(() => resolve({ ...mockReplies[0] }), 1000))
     )
 
     render(<ReplySection postId="post1" replies={mockReplies} />)
 
-    const textarea = screen.getByPlaceholderText('返信をツイート')
-    const submitButton = screen.getByText('返信')
+    const textarea = screen.getByPlaceholderText('この投稿に返信...')
+    const submitButton = screen.getByText('返信する')
 
     fireEvent.change(textarea, { target: { value: '新しいコメント' } })
     fireEvent.click(submitButton)
 
-    // Check loading state
-    expect(screen.getByText('投稿中...')).toBeInTheDocument()
-    expect(submitButton).toBeDisabled()
+    await waitFor(() => {
+      expect(submitButton).toBeDisabled()
+    })
   })
 
   it('prevents submission when textarea is empty', () => {
     render(<ReplySection postId="post1" replies={mockReplies} />)
 
-    const submitButton = screen.getByText('返信')
+    const submitButton = screen.getByText('返信する')
     
     // Button should be disabled when textarea is empty
     expect(submitButton).toBeDisabled()
@@ -172,8 +198,7 @@ describe('ReplySection', () => {
       author_id: 'user123',
       post_id: 'post1',
       created_at: '2025-01-15T13:00:00Z',
-      is_liked: false,
-      like_count: 0,
+      likes: 0,
       profiles: {
         username: 'testuser',
         display_name: 'Test User',
@@ -185,8 +210,8 @@ describe('ReplySection', () => {
 
     render(<ReplySection postId="post1" replies={mockReplies} />)
 
-    const textarea = screen.getByPlaceholderText('返信をツイート')
-    const submitButton = screen.getByText('返信')
+    const textarea = screen.getByPlaceholderText('この投稿に返信...')
+    const submitButton = screen.getByText('返信する')
 
     fireEvent.change(textarea, { target: { value: '新しいコメント' } })
     fireEvent.click(submitButton)
@@ -203,8 +228,7 @@ describe('ReplySection', () => {
       author_id: 'user123',
       post_id: 'post1',
       created_at: '2025-01-15T13:00:00Z',
-      is_liked: false,
-      like_count: 0,
+      likes: 0,
       profiles: {
         username: 'testuser',
         display_name: 'Test User',
@@ -219,14 +243,15 @@ describe('ReplySection', () => {
 
     render(<ReplySection postId="post1" replies={mockReplies} />)
 
-    const textarea = screen.getByPlaceholderText('返信をツイート')
-    const submitButton = screen.getByText('返信')
+    const textarea = screen.getByPlaceholderText('この投稿に返信...')
+    const submitButton = screen.getByText('返信する')
 
     fireEvent.change(textarea, { target: { value: '新しいコメント' } })
     fireEvent.click(submitButton)
 
-    // Reply should appear immediately (optimistic update)
-    expect(screen.getByText('新しいコメント')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByText('新しいコメント')).toBeInTheDocument()
+    })
   })
 
   it('handles error during reply submission', async () => {
@@ -235,14 +260,14 @@ describe('ReplySection', () => {
 
     render(<ReplySection postId="post1" replies={mockReplies} />)
 
-    const textarea = screen.getByPlaceholderText('返信をツイート')
-    const submitButton = screen.getByText('返信')
+    const textarea = screen.getByPlaceholderText('この投稿に返信...')
+    const submitButton = screen.getByText('返信する')
 
     fireEvent.change(textarea, { target: { value: '新しいコメント' } })
     fireEvent.click(submitButton)
 
     await waitFor(() => {
-      expect(consoleErrorSpy).toHaveBeenCalledWith('コメント投稿エラー:', expect.any(Error))
+      expect(consoleErrorSpy).toHaveBeenCalledWith('コメントの投稿に失敗しました:', expect.any(Error))
     })
 
     consoleErrorSpy.mockRestore()

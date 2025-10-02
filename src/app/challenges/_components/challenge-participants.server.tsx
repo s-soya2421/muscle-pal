@@ -1,24 +1,25 @@
 import { createClient } from '@/lib/supabase/server';
+import type { Database } from '@/types/supabase';
 import { ChallengeParticipants } from './challenge-participants';
 
-type LeaderboardRow = {
-  user_id: string;
-  display_name: string | null;
-  avatar_url: string | null;
-  fitness_level: string | null;
-  current_day: number | null;
-  completion_rate: number | null;
-};
+type LeaderboardRow =
+  Database['public']['Functions']['get_challenge_leaderboard']['Returns'][number];
 
 export default async function ChallengeParticipantsServer({ challengeId }: { challengeId: string }) {
   const supabase = await createClient();
 
-  const { data } = await supabase.rpc<LeaderboardRow[]>('get_challenge_leaderboard', {
+  const { data, error } = await supabase.rpc('get_challenge_leaderboard', {
     target_challenge_id: challengeId,
     limit_count: 10,
   });
 
-  const participants = (data ?? []).map((row, idx) => {
+  if (error) {
+    console.error('Failed to load challenge leaderboard:', error);
+  }
+
+  const leaderboardRows: LeaderboardRow[] = Array.isArray(data) ? data : [];
+
+  const participants = leaderboardRows.map((row, idx) => {
     const level = row.fitness_level === 'advanced'
       ? '上級者'
       : row.fitness_level === 'intermediate'

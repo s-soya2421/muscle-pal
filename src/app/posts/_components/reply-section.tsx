@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useOptimistic, useTransition, useEffect } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { Heart, MessageCircle, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -51,21 +51,14 @@ export function ReplySection({ postId, replies }: ReplySectionProps) {
         setCurrentUser(profile);
       }
     };
-    getUser();
+    void getUser();
   }, [supabase]);
-  
-  // 楽観的更新用
-  const [optimisticReplies, addOptimisticReply] = useOptimistic(
-    replies,
-    (state, action: { type: 'add' | 'remove'; reply: Reply }) => {
-      if (action.type === 'add') {
-        return [...state, action.reply];
-      } else if (action.type === 'remove') {
-        return state.filter(r => r.id !== action.reply.id);
-      }
-      return state;
-    }
-  );
+
+  const [optimisticReplies, setOptimisticReplies] = useState(replies);
+
+  useEffect(() => {
+    setOptimisticReplies(replies);
+  }, [replies]);
 
   const handleSubmitReply = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -91,9 +84,9 @@ export function ReplySection({ postId, replies }: ReplySectionProps) {
     
     // ★ 楽観更新は transition の中で
     startTransition(() => {
-      addOptimisticReply({ type: 'add', reply: optimisticReply });
-      setNewReply('');
+      setOptimisticReplies((prev) => [...prev, optimisticReply]);
     });
+    setNewReply('');
 
     // ネットワーク処理は外で実行
     void createComment(postId, content)
@@ -104,7 +97,7 @@ export function ReplySection({ postId, replies }: ReplySectionProps) {
         console.error('コメントの投稿に失敗しました:', err);
         // 失敗時はロールバック
         startTransition(() => {
-          addOptimisticReply({ type: 'remove', reply: optimisticReply });
+          setOptimisticReplies((prev) => prev.filter((reply) => reply.id !== optimisticReply.id));
         });
         setError('コメントの投稿に失敗しました。もう一度お試しください。');
       });

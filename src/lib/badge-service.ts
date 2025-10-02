@@ -333,13 +333,14 @@ export class BadgeService {
 
     const { data: participationRows } = await supabase
       .from('challenge_participations')
-      .select<{ completion_rate: number | null }>('completion_rate')
+      .select('completion_rate')
       .eq('challenge_id', challengeId);
 
-    const participantCount = participationRows?.length ?? 0;
+    const rows = participationRows ?? [];
+    const participantCount = rows.length;
     const averageCompletion = participantCount > 0
       ? Math.round(
-          participationRows.reduce((sum, row) => sum + (row.completion_rate ?? 0), 0) /
+          rows.reduce((sum, row) => sum + (row.completion_rate ?? 0), 0) /
             participantCount
         )
       : 0;

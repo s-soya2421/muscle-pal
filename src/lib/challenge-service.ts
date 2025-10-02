@@ -250,7 +250,7 @@ export class ChallengeService {
       const supabase = await this.getSupabase();
       const { data } = await supabase
         .from('challenge_participations')
-        .select<{ completion_rate: number | null }>('completion_rate')
+        .select('completion_rate')
         .eq('challenge_id', challengeId);
 
       if (!data || data.length === 0) {
@@ -273,4 +273,3 @@ export class ChallengeService {
     }
   }
 }
-// @ts-nocheck
