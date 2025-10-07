@@ -11,6 +11,7 @@ jest.mock('next/navigation')
 const mockUseAuth = useAuth as jest.MockedFunction<typeof useAuth>
 const mockUseRouter = useRouter as jest.MockedFunction<typeof useRouter>
 const mockPush = jest.fn()
+const mockReplace = jest.fn()
 
 describe('LoginPage', () => {
   beforeEach(() => {
@@ -18,7 +19,7 @@ describe('LoginPage', () => {
     
     mockUseRouter.mockReturnValue({
       push: mockPush,
-      replace: jest.fn(),
+      replace: mockReplace,
       prefetch: jest.fn(),
       back: jest.fn(),
       forward: jest.fn(),
@@ -90,7 +91,7 @@ describe('LoginPage', () => {
     expect(mockSignIn).toHaveBeenCalledWith('test@example.com', 'password123')
     
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith('/dashboard')
+      expect(mockReplace).toHaveBeenCalledWith('/dashboard')
     })
   })
 

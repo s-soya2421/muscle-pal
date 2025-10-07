@@ -1,84 +1,83 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MusclePal
 
-## Getting Started
+Next.js 15 と Supabase を組み合わせたフィットネスコミュニティアプリの検証用リポジトリです。SSR（App Router）を前提に、認証・投稿・チャレンジ・バッジなどの機能を Supabase の Postgres/Storage/RLS 上で試作しています。
 
-First, run the development server:
+## アーキテクチャ概要
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Next.js App Router（サーバーコンポーネント + Server Actions）
+- Supabase Auth / Row Level Security / Storage
+- Tailwind CSS + shadcn/ui（Radix ベースの UI コンポーネント）
+- Jest + React Testing Library によるユニットテスト
+
+主要フォルダ構成:
+
+```
+├─ app/                     # Next.js ルート（旧 template ブランチ用の初期ファイル）
+├─ src/
+│  ├─ app/                 # 実装中の画面（ダッシュボード・チャレンジ等）
+│  ├─ components/          # 再利用 UI
+│  ├─ contexts/            # AuthContext などのクライアント側状態
+│  ├─ lib/                 # Supabase クライアント、サービス層、ユーティリティ
+│  ├─ types/               # Supabase 生成型と独自型
+│  └─ __tests__/           # Jest テスト
+├─ supabase/               # CLI 用設定・マイグレーション・シード
+├─ __docs__/               # 要件定義や設計メモ
+└─ docker/                 # ローカル Docker 起動用の補助スクリプト
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## セットアップ（Supabase CLI）
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. 依存インストール
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+   ```bash
+   npm install
+   ```
 
-## Learn More
+2. Supabase CLI を起動（モック環境）
 
-To learn more about Next.js, take a look at the following resources:
+   ```bash
+   npm run supabase:start
+   npm run supabase:reset   # マイグレーション + シード投入
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+3. アプリ起動
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+   ```bash
+   npm run dev
+   ```
 
-## Deploy on Vercel
+4. 動作確認
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+   - http://localhost:3000 からアクセス
+   - 開発用アカウント: `dev@muscle-pal.fit` / `password123`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 環境変数について
 
-## Supabase ローカル開発とCLIへの切り替え
+- `.env.local` はコミット対象外です。`NEXT_PUBLIC_SUPABASE_URL` や `NEXT_PUBLIC_SUPABASE_ANON_KEY` などは各自のローカルで設定してください。
+- `docker-compose.yml` はデモ起動を想定したダミー値をそのまま使っています。必要に応じて `.env.docker` やローカル環境変数で上書きしてください。
 
-このプロジェクトでは、ローカル開発用に Docker ではなく Supabase CLI を採用しています。
-
-- 主な理由（正直な話）: ドキュメントをちゃんと読まずに Docker 側で遠回りしてしまい、「素直に CLI 使えばよかった…」と気づいたため（愚かだった、笑）。
-- 実利: CLI ならローカル起動、マイグレーション、シード投入、ストレージ操作まで一貫して扱え、チームでも再現性が高いです。
-
-よく使うコマンド（`package.json` のスクリプト経由）:
-
-```bash
-npm run supabase:start   # ローカルの Supabase を起動
-npm run supabase:reset   # DB を初期化（マイグレーション + シード）
-npm run supabase:status  # 稼働状況の確認
-npm run supabase:stop    # 停止
-```
-
-型の再生成（必要な場合）:
+## テスト / 品質チェック
 
 ```bash
-# ローカルのインスタンスから生成
-supabase gen types typescript --local > src/types/supabase.ts
+npm run lint        # ESLint
+npm run typecheck   # TypeScript 型チェック
+npm test            # Jest
 ```
 
-### 便利スクリプト（型生成）
+CI（`.github/workflows/ci.yml`）では Linux/Node 18,20 のマトリクスで lint/typecheck/build/test を実行しています。CodeQL ワークフローも有効です。
 
-```bash
-npm run types:gen:local      # ローカルDBから型を生成
-SUPABASE_PROJECT_ID=xxxx \
-  npm run types:gen:remote   # リモートプロジェクトから型を生成
-npm run supabase:reset:types # DBリセット後に型を再生成
-```
+## ブランチメモ
 
-### 開発用ログインアカウント
+- `main` : 現行実装ライン（このブランチ）
+- `demo` : Supabase に接続しないデモモード向け設定
+- `feature/*`, `add-*` : 機能検証用。テストやドキュメントが増えているので、必要に応じて参照してください。
 
-`supabase/seed.sql` に開発用の Supabase Auth ユーザーを追加しました。
+`master` ブランチは create-next-app の初期テンプレートを残してあります（互換性確認用途）。実装確認は `main` 側の `src/` ディレクトリを参照してください。
 
-- Email: `dev@muscle-pal.fit`
-- Password: `password123`
-- Role: `admin`（`public.profiles.role`）
+## 参考ドキュメント
 
-`npm run supabase:reset` または `supabase db reset` を実行すると、Auth と Profile の両方が再作成（既存の場合は更新）されます。開発用のアカウントを削除してしまった場合はリセットするか、Supabase Studio から同じ情報で追加してください。
+- `AGENTS.md` : セットアップやチーム運用のメモ
+- `QUICK_SETUP.md` : 画像アップロード機能の手順
+- `__docs__/requirements/01-project-overview.md` : 要件定義概要
 
-### チャレンジ機能について（現状）
-
-- UIは一覧/詳細/進捗/参加者まで実装済み。参加・一時停止・再開・チェックインはServer Actionsに接続済み。
-- 実データ連携は`supabase/migrations/20250917000001_core_challenge_and_post_images.sql`を適用し、ログイン状態で動作。
-- 初期段階ではモック表示のままでも問題ありません（クリック時のみServer Action実行）。
+開発メモや設計資料は `__docs__` 配下に順次追記しています。詳細仕様や補足が必要な場合はそちらを確認してください。

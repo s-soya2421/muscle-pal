@@ -454,4 +454,3 @@ export class BadgeService {
     return streak;
   }
 }
-// @ts-nocheck

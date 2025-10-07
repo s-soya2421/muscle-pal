@@ -25,10 +25,7 @@ export default function LoginPage() {
     try {
       await signIn(email, password)
 
-      // 認証状態の同期を待つため少し待機
-      setTimeout(() => {
-        router.push('/dashboard')
-      }, 100)
+      router.replace('/dashboard')
     } catch (error) {
       setError(handleAuthError(error, 'login page'))
     } finally {
