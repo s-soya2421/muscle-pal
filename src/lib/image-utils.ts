@@ -1,4 +1,5 @@
-import { getImageUrl } from './image-upload-client';
+import { getImageUrl, IMAGE_CONFIG } from './image-upload-client';
+import { buildStoragePublicUrl } from './storage-url';
 
 interface PostImage {
   id: string;
@@ -15,7 +16,11 @@ export function convertImagePathsToUrls(imagePaths: string[] | null): string[] {
     return [];
   }
   
-  return imagePaths.map(path => getImageUrl(path));
+  return imagePaths.map((path) =>
+    typeof window !== 'undefined'
+      ? getImageUrl(path)
+      : buildStoragePublicUrl(path, IMAGE_CONFIG.BUCKET_NAME)
+  );
 }
 
 /**
@@ -53,7 +58,11 @@ export function getPostImageUrls(post: unknown): string[] {
   if (postObj.post_images && Array.isArray(postObj.post_images) && postObj.post_images.length > 0) {
     return (postObj.post_images as PostImage[])
       .sort((a: PostImage, b: PostImage) => a.display_order - b.display_order)
-      .map((img: PostImage) => getImageUrl(img.storage_path));
+      .map((img: PostImage) =>
+        typeof window !== 'undefined'
+          ? getImageUrl(img.storage_path)
+          : buildStoragePublicUrl(img.storage_path, IMAGE_CONFIG.BUCKET_NAME)
+      );
   }
   
   // 旧image_pathsフィールドをフォールバック

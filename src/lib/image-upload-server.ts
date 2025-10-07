@@ -1,6 +1,7 @@
 // Server-side image upload functions
 import { createClient } from '@/lib/supabase/server';
-import { IMAGE_CONFIG, getImageUrl } from './image-upload-client';
+import { IMAGE_CONFIG } from './image-upload-client';
+import { buildStoragePublicUrl } from './storage-url';
 
 export interface UploadedImage {
   path: string;
@@ -34,7 +35,7 @@ export async function uploadImages(files: File[], userId: string): Promise<Uploa
 
     uploadedImages.push({
       path: data.path,
-      url: getImageUrl(data.path),
+      url: buildStoragePublicUrl(data.path, IMAGE_CONFIG.BUCKET_NAME, supabase),
     });
   }
 

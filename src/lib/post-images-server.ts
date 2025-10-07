@@ -1,32 +1,7 @@
 // Server-side functions for post images management using intermediate table
 import { createClient } from '@/lib/supabase/server';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import { IMAGE_CONFIG } from './image-upload-client';
-
-const PLACEHOLDER_IMAGE =
-  'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ci8+CjxwYXRoIGQ9Ik02MCA3MEg4MFY5MEg2MFY3MFpNMTAwIDcwSDEyMFY5MEgxMDBWNzBaTTEwMCAxMTBIMTIwVjEzMEgxMDBWMTEwWk02MCA5MEg4MFYxMTBINjBWOTBaTTgwIDEzMEgxNDBWMTUwSDgwVjEzMFoiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+';
-
-function resolvePublicUrl(storagePath: string, supabase: SupabaseClient): string {
-  if (!storagePath) {
-    return PLACEHOLDER_IMAGE;
-  }
-
-  const baseUrl = process.env.NEXT_PUBLIC_STORAGE_BASE_URL?.replace(/\/$/, '');
-  if (baseUrl) {
-    return `${baseUrl}/${IMAGE_CONFIG.BUCKET_NAME}/${storagePath}`;
-  }
-
-  const { data } = supabase.storage
-    .from(IMAGE_CONFIG.BUCKET_NAME)
-    .getPublicUrl(storagePath);
-
-  if (!data?.publicUrl) {
-    console.error('画像URL生成エラー: publicUrl が取得できませんでした');
-    return PLACEHOLDER_IMAGE;
-  }
-
-  return data.publicUrl;
-}
+import { buildStoragePublicUrl } from './storage-url';
 
 export interface PostImageData {
   id: string;
@@ -109,7 +84,11 @@ export async function uploadPostImages(
     uploadedImages.push({
       id: imageData.id,
       storage_path: imageData.storage_path,
-      url: resolvePublicUrl(imageData.storage_path, supabase),
+      url: buildStoragePublicUrl(
+        imageData.storage_path,
+        IMAGE_CONFIG.BUCKET_NAME,
+        supabase
+      ),
       display_order: imageData.display_order,
     });
   }
@@ -139,7 +118,11 @@ export async function getPostImages(postId: string): Promise<PostImageData[]> {
   for (const img of data ?? []) {
     result.push({
       ...img,
-      url: resolvePublicUrl(img.storage_path, supabase),
+      url: buildStoragePublicUrl(
+        img.storage_path,
+        IMAGE_CONFIG.BUCKET_NAME,
+        supabase
+      ),
     });
   }
   return result;
