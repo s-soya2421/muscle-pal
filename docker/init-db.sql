@@ -21,16 +21,16 @@ BEGIN
     
     -- Create supabase_auth_admin user if not exists
     IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'supabase_auth_admin') THEN
-        CREATE USER supabase_auth_admin NOINHERIT CREATEROLE LOGIN PASSWORD 'your-super-secret-and-long-postgres-password';
+        CREATE USER supabase_auth_admin NOINHERIT CREATEROLE LOGIN PASSWORD 'dev-postgres-password';
     ELSE
-        ALTER USER supabase_auth_admin PASSWORD 'your-super-secret-and-long-postgres-password';
+        ALTER USER supabase_auth_admin PASSWORD 'dev-postgres-password';
     END IF;
     
     -- Create supabase_storage_admin user if not exists
     IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'supabase_storage_admin') THEN
-        CREATE USER supabase_storage_admin NOINHERIT CREATEROLE LOGIN PASSWORD 'your-super-secret-and-long-postgres-password';
+        CREATE USER supabase_storage_admin NOINHERIT CREATEROLE LOGIN PASSWORD 'dev-postgres-password';
     ELSE
-        ALTER USER supabase_storage_admin PASSWORD 'your-super-secret-and-long-postgres-password';
+        ALTER USER supabase_storage_admin PASSWORD 'dev-postgres-password';
     END IF;
     
     -- Grant database-level permissions to storage admin
@@ -39,16 +39,16 @@ BEGIN
     
     -- Create supabase_realtime_admin user if not exists
     IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'supabase_realtime_admin') THEN
-        CREATE USER supabase_realtime_admin NOINHERIT CREATEROLE LOGIN PASSWORD 'your-super-secret-and-long-postgres-password';
+        CREATE USER supabase_realtime_admin NOINHERIT CREATEROLE LOGIN PASSWORD 'dev-postgres-password';
     ELSE
-        ALTER USER supabase_realtime_admin PASSWORD 'your-super-secret-and-long-postgres-password';
+        ALTER USER supabase_realtime_admin PASSWORD 'dev-postgres-password';
     END IF;
     
     -- Create authenticator user if not exists
     IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'authenticator') THEN
-        CREATE USER authenticator NOINHERIT LOGIN PASSWORD 'your-super-secret-and-long-postgres-password';
+        CREATE USER authenticator NOINHERIT LOGIN PASSWORD 'dev-postgres-password';
     ELSE
-        ALTER USER authenticator PASSWORD 'your-super-secret-and-long-postgres-password';
+        ALTER USER authenticator PASSWORD 'dev-postgres-password';
     END IF;
 END
 $$;

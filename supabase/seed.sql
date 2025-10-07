@@ -8,7 +8,7 @@ DO $$
 DECLARE
   dev_user_id uuid;
 BEGIN
-  SELECT id INTO dev_user_id FROM auth.users WHERE email = 'dev@muscle-pal.fit';
+  SELECT id INTO dev_user_id FROM auth.users WHERE email = 'dev@example.com';
 
   IF NOT FOUND THEN
     dev_user_id := gen_random_uuid();
@@ -30,7 +30,7 @@ BEGIN
       dev_user_id,
       'authenticated',
       'authenticated',
-      'dev@muscle-pal.fit',
+      'dev@example.com',
       crypt('password123', gen_salt('bf')),
       now(),
       now(),
@@ -67,9 +67,9 @@ BEGIN
     VALUES (
       dev_user_id,
       'email',
-      'dev@muscle-pal.fit',
-      jsonb_build_object('sub', dev_user_id::text, 'email', 'dev@muscle-pal.fit'),
-      'dev@muscle-pal.fit',
+      'dev@example.com',
+      jsonb_build_object('sub', dev_user_id::text, 'email', 'dev@example.com'),
+      'dev@example.com',
       now(),
       now(),
       now()
@@ -77,8 +77,8 @@ BEGIN
   ELSE
     UPDATE auth.identities
     SET
-      identity_data = jsonb_build_object('sub', dev_user_id::text, 'email', 'dev@muscle-pal.fit'),
-      email = 'dev@muscle-pal.fit',
+      identity_data = jsonb_build_object('sub', dev_user_id::text, 'email', 'dev@example.com'),
+      email = 'dev@example.com',
       last_sign_in_at = now(),
       updated_at = now()
     WHERE user_id = dev_user_id AND provider = 'email';

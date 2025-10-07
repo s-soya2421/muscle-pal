@@ -78,7 +78,7 @@ echo "🗄️  Running Supabase migrations..."
 echo "🔧 Setting up Supabase configuration for Docker..."
 
 # Docker環境用のSupabase設定を一時的に作成
-export SUPABASE_DB_URL="postgresql://postgres:your-super-secret-and-long-postgres-password@localhost:54322/postgres"
+export SUPABASE_DB_URL="postgresql://postgres:${POSTGRES_PASSWORD:-dev-postgres-password}@localhost:54322/postgres"
 
 # マイグレーションファイルを直接PostgreSQLに適用
 echo "📁 Applying migration files..."
