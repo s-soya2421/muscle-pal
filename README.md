@@ -49,12 +49,12 @@ Next.js 15 と Supabase を組み合わせたフィットネスコミュニテ�
 4. 動作確認
 
    - http://localhost:3000 からアクセス
-   - 開発用アカウント: `内緒(￣▽￣)`（ローカル専用のダミー）
+   - 開発用アカウント: `dev@example.com` / `password123`（ローカル専用ダミー。公開運用では必ず削除・無効化してください）
 
 ### 環境変数について
 
 - `.env.local` はコミット対象外です。`NEXT_PUBLIC_SUPABASE_URL` や `NEXT_PUBLIC_SUPABASE_ANON_KEY` などは各自のローカルで設定してください。
-- `docker-compose.yml` はデモ起動を想定したダミー値をそのまま使っています。必要に応じて `.env.docker` やローカル環境変数で上書きしてください。
+- `docker-compose.yml` / `docker-compose.dev.yml` の環境変数は `${VAR:-dev-placeholder}` 形式でダミー値を埋めています。実際のプロジェクトでは `.env.docker`（`docker compose --env-file`）やホスト側の環境変数で `POSTGRES_PASSWORD` / `JWT_SECRET` / `SUPABASE_SERVICE_KEY` などを上書きしてください。
 
 ## テスト / 品質チェック
 
